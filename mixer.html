@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>多轨播放器演示</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --track-bg: #e5e7eb; /* gray-200 */
+            --thumb-bg: #3b82f6; /* blue-500 */
+            --thumb-hover-bg: #2563eb; /* blue-600 */
+            --track-fill-bg: #60a5fa; /* blue-400 */
+        }
+        body { -webkit-tap-highlight-color: transparent; }
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            background: var(--track-bg);
+            border-radius: 9999px;
+            outline: none;
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--thumb-bg);
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 0 5px rgba(0,0,0,0.2);
+            transition: background-color 0.2s ease-in-out;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover { background: var(--thumb-hover-bg); }
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: var(--thumb-bg);
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 0 5px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+        input[type="range"]::-moz-range-thumb:hover { background: var(--thumb-hover-bg); }
+        .volume-slider {
+            background-size: 75% 100%;
+            background-image: linear-gradient(var(--track-fill-bg), var(--track-fill-bg));
+            background-repeat: no-repeat;
+        }
+        .volume-slider.metronome { background-size: 0% 100%; }
+        .volume-tooltip {
+            transform: translate(-50%, -26px);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-md mx-auto bg-white rounded-2xl shadow-lg overflow-hidden">
+        
+        <!-- 头部区域 -->
+        <div class="px-6 pt-6 pb-0">
+            <div class="text-center">
+                <h1 class="text-xl font-bold text-gray-800 mb-1">多轨播放器演示</h1>
+                <p class="text-sm text-gray-500 mt-1">《李佳薇 - 天后 (Live)》</p>
+            </div>
+        </div>
+
+        <!-- 播放控制区域 -->
+        <div class="px-6 py-6">
+            <div class="space-y-2">
+                <div class="flex items-center space-x-4">
+                    <button id="play-pause-btn" class="flex-shrink-0 w-12 h-12 bg-blue-500 text-white font-bold rounded-full transition-all duration-200 flex items-center justify-center text-lg shadow disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                        <!-- 初始状态显示加载图标 -->
+                        <svg id="loading-icon" class="animate-spin h-7 w-7 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        <!-- 失败状态图标 -->
+                        <svg id="error-icon" class="hidden h-7 w-7 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <!-- 播放图标 -->
+                        <svg id="play-icon" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" class="ml-1 hidden"><path d="M8 5v14l11-7z"></path></svg>
+                        <!-- 暂停图标 -->
+                        <svg id="pause-icon" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" class="hidden"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+                    </button>
+                    
+                    <!-- 进度条容器，包含加载、失败和成功三种状态 -->
+                    <div class="w-full flex-grow">
+                        <!-- 状态1: 加载/失败状态容器 -->
+                        <div id="progress-status-container" class="text-center py-2 h-[34px] flex items-center justify-center">
+                            <div id="loading-text" class="text-sm text-gray-500">
+                                正在加载音频资源... <span id="load-progress-percent">0</span>%
+                            </div>
+                            <div id="error-text" class="hidden text-sm text-red-500">
+                                音频资源加载失败, 请<a href="javascript:location.reload()" class="font-bold underline">刷新页面</a>重试。
+                            </div>
+                        </div>
+
+                        <!-- 状态2: 播放器就绪状态容器 (默认隐藏) -->
+                        <div id="player-progress-container" class="hidden">
+                            <input type="range" id="master-progress" min="0" max="100" value="0" class="w-full">
+                            <div class="flex justify-between items-center text-xs text-gray-500 px-1 mt-1">
+                                <span id="current-time">00:00</span>
+                                <span id="total-duration">--:--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr class="border-gray-200">
+
+        <!-- 音轨列表区域 -->
+        <div class="px-6">
+            <div id="mixer-tracks" class="divide-y divide-gray-200">
+                <!-- 音轨将由 JavaScript 动态生成 -->
+            </div>
+        </div>
+
+        <hr class="border-gray-200">
+
+        <!-- 底部提示区域 -->
+        <div class="px-6 py-6">
+            <div class="text-center text-xs text-gray-400">
+                <p>音乐轨道由 AI 分离，可能存在瑕疵</p>
+                <p class="mt-1">此页面由 Gemini 2.5 生成</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const tracksData = [
+            { name: '人声', file: '人声.ogg', defaultVolume: 75 },
+            { name: '吉他', file: '吉他.ogg', defaultVolume: 75 },
+            { name: '鼓、贝斯', file: '鼓、贝斯.ogg', defaultVolume: 75 },
+            { name: '键盘、管弦乐', file: '键盘、管弦乐.ogg', defaultVolume: 75 },
+            { name: '节拍器', file: '节拍器.ogg', defaultVolume: 0 }
+        ];
+
+        // 获取DOM元素
+        const mixerTracksContainer = document.getElementById('mixer-tracks');
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        const loadingIcon = document.getElementById('loading-icon');
+        const errorIcon = document.getElementById('error-icon');
+        const playIcon = document.getElementById('play-icon');
+        const pauseIcon = document.getElementById('pause-icon');
+        
+        // 进度条相关DOM
+        const progressStatusContainer = document.getElementById('progress-status-container');
+        const loadingText = document.getElementById('loading-text');
+        const loadProgressPercent = document.getElementById('load-progress-percent');
+        const errorText = document.getElementById('error-text');
+        const playerProgressContainer = document.getElementById('player-progress-container');
+        const masterProgress = document.getElementById('master-progress');
+        const currentTimeDisplay = document.getElementById('current-time');
+        const totalDurationDisplay = document.getElementById('total-duration');
+
+        let audioElements = [];
+        let isPlaying = false;
+        let isSeeking = false;
+        let minDuration = Infinity;
+
+        const ICONS = {
+            unmuted: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"></path></svg>`,
+            muted: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="text-red-500"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"></path></svg>`
+        };
+
+        // 动态创建音轨UI和Audio对象
+        tracksData.forEach((track) => {
+            const trackElement = document.createElement('div');
+            trackElement.className = 'space-y-2 py-4';
+            
+            const labelAndMuteContainer = document.createElement('div');
+            labelAndMuteContainer.className = 'flex justify-between items-center';
+            const label = document.createElement('label');
+            label.textContent = track.name;
+            label.className = 'text-sm font-bold text-gray-700';
+            const muteBtn = document.createElement('button');
+            muteBtn.className = 'text-gray-400 hover:text-gray-600 transition-colors';
+            labelAndMuteContainer.appendChild(label);
+            labelAndMuteContainer.appendChild(muteBtn);
+
+            const sliderContainer = document.createElement('div');
+            sliderContainer.className = 'relative';
+            const volumeSlider = document.createElement('input');
+            volumeSlider.type = 'range';
+            volumeSlider.min = 0;
+            volumeSlider.max = 100;
+            volumeSlider.value = track.defaultVolume;
+            volumeSlider.className = `volume-slider w-full ${track.name === '节拍器' ? 'metronome' : ''}`;
+            const volumeTooltip = document.createElement('div');
+            volumeTooltip.className = 'volume-tooltip absolute top-0 bg-gray-800 text-white text-xs rounded py-1 px-2 pointer-events-none opacity-0 transition-opacity duration-200';
+            volumeTooltip.textContent = `${track.defaultVolume}%`;
+            sliderContainer.appendChild(volumeSlider);
+            sliderContainer.appendChild(volumeTooltip);
+
+            trackElement.appendChild(labelAndMuteContainer);
+            trackElement.appendChild(sliderContainer);
+            mixerTracksContainer.appendChild(trackElement);
+
+            const audio = new Audio(track.file);
+            audio.preload = 'auto';
+            audio.volume = track.defaultVolume / 100;
+            audioElements.push({ audio, volumeSlider, muteBtn, tooltip: volumeTooltip, lastVolume: audio.volume });
+        });
+
+        // --- 音频加载逻辑 ---
+        let loadedCount = 0;
+        const totalCount = audioElements.length;
+
+        const loadPromises = audioElements.map(track => {
+            return new Promise((resolve, reject) => {
+                // 'canplaythrough' 事件表示音频已缓冲足够，可以不间断播放
+                track.audio.addEventListener('canplaythrough', () => {
+                    loadedCount++;
+                    const percent = Math.round((loadedCount / totalCount) * 100);
+                    loadProgressPercent.textContent = percent;
+                    resolve({ status: 'ok', duration: track.audio.duration });
+                });
+
+                track.audio.addEventListener('error', () => {
+                    console.error(`无法加载音频文件: ${track.audio.src}`);
+                    reject({ status: 'error', src: track.audio.src });
+                });
+            });
+        });
+
+        // Promise.allSettled 等待所有Promise完成，无论成功或失败
+        Promise.allSettled(loadPromises).then(results => {
+            const successfulLoads = results
+                .filter(r => r.status === 'fulfilled' && isFinite(r.value.duration))
+                .map(r => r.value.duration);
+            
+            const failedLoads = results.filter(r => r.status === 'rejected');
+
+            loadingIcon.classList.add('hidden');
+
+            if (failedLoads.length > 0) {
+                // --- 加载失败处理 ---
+                loadingText.classList.add('hidden');
+                errorText.classList.remove('hidden');
+                errorIcon.classList.remove('hidden');
+                playPauseBtn.disabled = true;
+                playPauseBtn.classList.add('bg-red-500'); // 将按钮变为红色以示警告
+                console.error(`${failedLoads.length} 个音频文件加载失败，播放功能已禁用。`);
+            } else {
+                // --- 全部加载成功处理 ---
+                minDuration = Math.min(...successfulLoads);
+                masterProgress.max = minDuration;
+                totalDurationDisplay.textContent = formatTime(minDuration);
+                
+                // 切换UI状态
+                progressStatusContainer.classList.add('hidden');
+                playerProgressContainer.classList.remove('hidden');
+                
+                playPauseBtn.disabled = false;
+                playIcon.classList.remove('hidden');
+            }
+        });
+
+        // --- 事件监听和控制函数 ---
+
+        playPauseBtn.addEventListener('click', togglePlayPause);
+        masterProgress.addEventListener('input', () => { isSeeking = true; seekAllTracks(); });
+        masterProgress.addEventListener('change', () => { isSeeking = false; seekAllTracks(); });
+
+        audioElements.forEach((track, index) => {
+            track.volumeSlider.addEventListener('input', e => handleVolumeChange(e, track, index));
+            track.muteBtn.addEventListener('click', () => toggleMute(index));
+            track.volumeSlider.addEventListener('mousedown', () => showTooltip(track));
+            track.volumeSlider.addEventListener('touchstart', () => showTooltip(track), { passive: true });
+            track.volumeSlider.addEventListener('input', () => updateTooltip(track));
+            document.addEventListener('mouseup', () => hideTooltip(track));
+            document.addEventListener('touchend', () => hideTooltip(track));
+        });
+
+        const primaryAudio = audioElements[0].audio;
+        primaryAudio.addEventListener('timeupdate', () => {
+            if (isFinite(minDuration) && primaryAudio.currentTime >= minDuration) {
+                stopAllTracks();
+                return;
+            }
+            if (!isSeeking) {
+                masterProgress.value = primaryAudio.currentTime;
+                currentTimeDisplay.textContent = formatTime(primaryAudio.currentTime);
+            }
+        });
+
+        function handleVolumeChange(e, track, index) {
+            const value = e.target.value;
+            const volume = value / 100;
+            track.audio.volume = volume;
+            updateVolumeSliderFill(track.volumeSlider, value);
+            if (volume > 0) {
+                track.lastVolume = volume;
+                track.audio.muted = false;
+            } else {
+                track.audio.muted = true;
+            }
+            updateMuteVisuals(index);
+        }
+
+        function toggleMute(index) {
+            const track = audioElements[index];
+            track.audio.muted = !track.audio.muted;
+            updateMuteVisuals(index);
+        }
+        
+        function stopAllTracks() {
+            audioElements.forEach(track => {
+                track.audio.pause();
+                track.audio.currentTime = 0;
+            });
+            isPlaying = false;
+            updatePlayPauseButton();
+            masterProgress.value = 0;
+            currentTimeDisplay.textContent = formatTime(0);
+        }
+
+        function togglePlayPause() {
+            if (playPauseBtn.disabled) return;
+            isPlaying = !isPlaying;
+            if (isPlaying) {
+                if (primaryAudio.currentTime >= minDuration) {
+                    seekAllTracks(0);
+                }
+                const playPromises = audioElements.map(track => track.audio.play());
+                Promise.all(playPromises).catch(e => {
+                    console.error("播放错误:", e);
+                    isPlaying = false;
+                }).finally(updatePlayPauseButton);
+            } else {
+                audioElements.forEach(track => track.audio.pause());
+                updatePlayPauseButton();
+            }
+        }
+        
+        function seekAllTracks(time = null) {
+            const seekTime = time !== null ? time : masterProgress.value;
+            currentTimeDisplay.textContent = formatTime(seekTime);
+            audioElements.forEach(track => { track.audio.currentTime = seekTime; });
+        }
+
+        function updatePlayPauseButton() {
+            if (isPlaying) {
+                playIcon.classList.add('hidden');
+                pauseIcon.classList.remove('hidden');
+                playPauseBtn.classList.replace('bg-blue-500', 'bg-amber-500');
+                playPauseBtn.classList.replace('hover:bg-blue-600', 'hover:bg-amber-600');
+            } else {
+                playIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+                playPauseBtn.classList.replace('bg-amber-500', 'bg-blue-500');
+                playPauseBtn.classList.replace('hover:bg-amber-600', 'hover:bg-blue-600');
+            }
+        }
+        
+        function updateMuteVisuals(index) {
+            const track = audioElements[index];
+            track.muteBtn.innerHTML = track.audio.muted ? ICONS.muted : ICONS.unmuted;
+            track.volumeSlider.style.opacity = track.audio.muted ? '0.5' : '1';
+        }
+        
+        function updateVolumeSliderFill(slider, value) {
+            slider.style.backgroundSize = `${value}% 100%`;
+        }
+        
+        function formatTime(seconds) {
+            const secs = Math.floor(seconds);
+            const minutes = Math.floor(secs / 60);
+            const remainingSeconds = secs % 60;
+            return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+        }
+        
+        function showTooltip(track) {
+            track.tooltip.style.opacity = '1';
+            updateTooltip(track);
+        }
+
+        function updateTooltip(track) {
+            const slider = track.volumeSlider;
+            const value = slider.value;
+            track.tooltip.textContent = `${value}%`;
+            const thumbWidth = 20;
+            const trackWidth = slider.offsetWidth;
+            const percent = value / 100;
+            let thumbPosition = percent * (trackWidth - thumbWidth) + (thumbWidth / 2);
+            thumbPosition = Math.max(track.tooltip.offsetWidth / 2, Math.min(thumbPosition, trackWidth - track.tooltip.offsetWidth / 2));
+            track.tooltip.style.left = `${thumbPosition}px`;
+        }
+
+        function hideTooltip(track) {
+            track.tooltip.style.opacity = '0';
+        }
+
+        // 初始化音量条和静音按钮状态
+        audioElements.forEach((track, index) => {
+            updateVolumeSliderFill(track.volumeSlider, track.volumeSlider.value);
+            if (track.volumeSlider.value == 0) track.audio.muted = true;
+            updateMuteVisuals(index);
+        });
+    });
+    </script>
+</body>
+</html>
