@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
     <title>多轨音频播放器演示</title>
-    <!-- 引入 Tailwind CSS 框架 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* 定义 CSS 变量，用于统一管理颜色 */
@@ -108,10 +107,8 @@
 
 <body class="bg-gray-100 font-sans flex items-center justify-center min-h-screen p-4">
 
-    <!-- 主播放器容器 -->
     <div class="w-full max-w-md mx-auto bg-white rounded-2xl shadow-lg overflow-hidden">
 
-        <!-- 播放器头部信息 -->
         <div class="px-6 pt-6 pb-0">
             <div class="text-center">
                 <h1 class="text-xl font-bold text-gray-800 mb-1">多轨音频播放器演示</h1>
@@ -119,15 +116,25 @@
             </div>
         </div>
 
-        <!-- 主控制区域 -->
-        <div class="px-6 py-6">
-            <div class="space-y-2">
+        <div class="px-6 py-6 min-h-[110px]">
+            <div id="quality-selection-container" class="text-center">
+                <p class="text-sm text-gray-600 mb-4">请选择要加载的音频资源版本</p>
+                <div class="flex justify-center space-x-4">
+                    <button id="load-hq-btn" disabled
+                        class="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-600 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-wait">高音质<span
+                            id="hq-size" class="text-xs font-normal"></span>
+                    </button>
+                    <button id="load-lq-btn" disabled
+                        class="px-4 py-2 bg-yellow-500 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-600 transition-all duration-200 disabled:bg-yellow-400 disabled:cursor-wait">低音质<span id="lq-size" class="text-xs font-normal"></span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="space-y-2 hidden" id="main-player-controls">
                 <div class="flex items-center space-x-4">
-                    <!-- 播放/暂停按钮 -->
                     <button
                         class="flex-shrink-0 w-12 h-12 bg-blue-500 text-white font-bold rounded-full transition-all duration-200 flex items-center justify-center text-lg shadow disabled:bg-gray-400 disabled:cursor-not-allowed"
                         id="play-pause-btn">
-                        <!-- 加载中图标 -->
                         <svg class="animate-spin h-7 w-7 text-white hidden" fill="none" id="loading-icon"
                             viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
@@ -137,36 +144,30 @@
                                 fill="currentColor">
                             </path>
                         </svg>
-                        <!-- 错误图标 -->
                         <svg class="hidden h-7 w-7 text-white" fill="none" id="error-icon" stroke="currentColor"
                             viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round"
                                 stroke-linejoin="round" stroke-width="2" />
                         </svg>
-                        <!-- 播放图标 -->
                         <svg class="ml-1" fill="currentColor" height="28" id="play-icon" viewBox="0 0 24 24" width="28"
                             xmlns="http://www.w3.org/2000/svg">
                             <path d="M8 5v14l11-7z"></path>
                         </svg>
-                        <!-- 暂停图标 -->
                         <svg class="hidden" fill="currentColor" height="28" id="pause-icon" viewBox="0 0 24 24"
                             width="28" xmlns="http://www.w3.org/2000/svg">
                             <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path>
                         </svg>
                     </button>
 
-                    <!-- 进度条和状态显示区域 -->
                     <div class="w-full flex-grow">
-                        <!-- 状态文本容器（加载、错误等） -->
                         <div class="text-center py-2 h-[34px] flex items-center justify-center"
                             id="progress-status-container">
-                            <div class="text-sm text-gray-500" id="loading-text">点击播放按钮加载音频资源</div>
+                            <div class="text-sm text-gray-500" id="loading-text"></div>
                             <div class="hidden text-sm text-red-500" id="error-text">
                                 音频资源加载失败，请<a class="font-bold underline" href="javascript:location.reload()">刷新页面</a>重试。
                             </div>
                         </div>
 
-                        <!-- 播放器进度条容器（加载后显示） -->
                         <div class="hidden" id="player-progress-container">
                             <input class="w-full" id="master-progress" max="100" min="0" type="range" value="0">
                             <div class="flex justify-between items-center text-xs text-gray-500 px-1 mt-1">
@@ -179,20 +180,16 @@
             </div>
         </div>
 
-        <!-- 分隔线 -->
+
         <hr class="border-gray-200">
 
-        <!-- 混音器轨道区域 -->
         <div class="px-6">
             <div class="divide-y divide-gray-200" id="mixer-tracks">
-                <!-- 音轨将通过 JavaScript 动态插入到这里 -->
             </div>
         </div>
 
-        <!-- 分隔线 -->
         <hr class="border-gray-200">
 
-        <!-- 页脚信息 -->
         <div class="px-6 py-6">
             <div class="text-center text-xs text-gray-400">
                 <p>本页面所有代码由 AI 生成</p>
@@ -206,11 +203,11 @@
         document.addEventListener('DOMContentLoaded', () => {
             // --- 音轨数据定义 ---
             const tracksData = [
-                { name: '人声', file: '人声.ogg', defaultVolume: 75 },
-                { name: '吉他', file: '吉他.ogg', defaultVolume: 75 },
-                { name: '鼓、贝斯', file: '鼓、贝斯.ogg', defaultVolume: 75 },
-                { name: '键盘、管弦乐', file: '键盘、管弦乐.ogg', defaultVolume: 75 },
-                { name: '节拍器', file: '节拍器.ogg', defaultVolume: 0 } // 节拍器默认静音
+                { name: '人声', baseName: '人声', defaultVolume: 75 },
+                { name: '吉他', baseName: '吉他', defaultVolume: 75 },
+                { name: '鼓、贝斯', baseName: '鼓、贝斯', defaultVolume: 75 },
+                { name: '键盘、管弦乐', baseName: '键盘、管弦乐', defaultVolume: 75 },
+                { name: '节拍器', baseName: '节拍器', defaultVolume: 0 } // 节拍器默认静音
             ];
 
             // --- 获取 DOM 元素 ---
@@ -227,6 +224,14 @@
             const masterProgress = document.getElementById('master-progress');
             const currentTimeDisplay = document.getElementById('current-time');
             const totalDurationDisplay = document.getElementById('total-duration');
+            // 新增：获取质量选择相关元素
+            const qualitySelectionContainer = document.getElementById('quality-selection-container');
+            const mainPlayerControls = document.getElementById('main-player-controls');
+            const loadHqBtn = document.getElementById('load-hq-btn');
+            const loadLqBtn = document.getElementById('load-lq-btn');
+            const hqSizeSpan = document.getElementById('hq-size');
+            const lqSizeSpan = document.getElementById('lq-size');
+
 
             // --- 全局状态变量 ---
             let audioContext; // Web Audio API 的核心对象
@@ -239,6 +244,8 @@
             let minDuration = Infinity; // 所有音轨中最短的时长，作为播放器的总时长
             let animationFrameId; // requestAnimationFrame 的 ID，用于更新进度
             let totalDownloadSize = 0; // 所有音频文件的总大小（字节）
+            let storedHqBytes = 0;
+            let storedLqBytes = 0;
 
             // --- SVG 图标 ---
             const ICONS = {
@@ -252,71 +259,48 @@
              */
             function setupUI() {
                 tracksData.forEach((trackData) => {
-                    // 创建每个音轨的容器
                     const trackElement = document.createElement('div');
                     trackElement.className = 'py-4';
-
-                    // 创建标签和静音按钮的容器
                     const labelAndMuteContainer = document.createElement('div');
                     labelAndMuteContainer.className = 'flex justify-between items-center';
-
                     const label = document.createElement('label');
                     label.textContent = trackData.name;
                     label.className = 'text-sm font-bold text-gray-700';
-
                     const muteBtn = document.createElement('button');
                     muteBtn.className = 'text-gray-400 hover:text-gray-600 transition-colors';
                     labelAndMuteContainer.appendChild(label);
                     labelAndMuteContainer.appendChild(muteBtn);
-
-                    // 创建控制元件（滑块和电平表）的容器
                     const controlsContainer = document.createElement('div');
                     controlsContainer.className = 'flex items-center space-x-2 mt-2';
-
-                    // 音量滑块的包装器，用于定位提示框
                     const sliderWrapper = document.createElement('div');
                     sliderWrapper.className = 'relative w-3/4 h-[20px] flex items-center';
-
                     const volumeSlider = document.createElement('input');
                     volumeSlider.type = 'range';
                     volumeSlider.min = 0;
                     volumeSlider.max = 100;
                     volumeSlider.value = trackData.defaultVolume;
                     volumeSlider.className = `volume-slider w-full ${trackData.name === '节拍器' ? 'metronome' : ''}`;
-
-                    // 音量提示框
                     const volumeTooltip = document.createElement('div');
                     volumeTooltip.className = 'volume-tooltip absolute top-0 bg-gray-800 text-white text-xs rounded py-1 px-2 pointer-events-none opacity-0 transition-opacity duration-200';
                     volumeTooltip.textContent = `${trackData.defaultVolume}%`;
-
                     sliderWrapper.appendChild(volumeSlider);
                     sliderWrapper.appendChild(volumeTooltip);
-
-                    // 电平表的包装器
                     const meterWrapper = document.createElement('div');
                     meterWrapper.className = 'w-1/4 h-[20px] flex items-center';
-
                     const meterContainer = document.createElement('div');
                     meterContainer.className = 'w-full h-2 bg-gray-200 rounded-full overflow-hidden';
-
                     const meterBar = document.createElement('div');
                     meterBar.className = 'h-full rounded-full bg-green-500 transition-width duration-100 ease-out';
                     meterBar.style.width = '0%';
-
                     meterContainer.appendChild(meterBar);
                     meterWrapper.appendChild(meterContainer);
-
                     controlsContainer.appendChild(sliderWrapper);
                     controlsContainer.appendChild(meterWrapper);
-
                     trackElement.appendChild(labelAndMuteContainer);
                     trackElement.appendChild(controlsContainer);
                     mixerTracksContainer.appendChild(trackElement);
-
-                    // 将音轨数据、状态和 UI 元素存储到全局 tracks 数组中
                     tracks.push({ ...trackData, isMuted: trackData.defaultVolume === 0, lastVolume: trackData.defaultVolume / 100, ui: { volumeSlider, muteBtn, tooltip: volumeTooltip, meterBar } });
                 });
-                playPauseBtn.disabled = false; // 启用播放按钮
             }
 
             /**
@@ -331,39 +315,26 @@
                 loadingText.innerHTML = `正在加载音频资源（<span id="load-progress-percent">0</span>%）`;
 
                 try {
-                    // 创建 AudioContext
                     audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-                    // 为每个音轨创建增益节点 (GainNode) 和分析节点 (AnalyserNode)
                     tracks.forEach(track => {
                         const gainNode = audioContext.createGain();
-                        gainNode.gain.value = track.isMuted ? 0 : track.lastVolume; // 设置初始音量
-
+                        gainNode.gain.value = track.isMuted ? 0 : track.lastVolume;
                         const analyserNode = audioContext.createAnalyser();
-                        analyserNode.fftSize = 2048; // 设置 FFT 大小用于电平表分析
-
-                        // 连接节点：增益 -> 分析 -> 输出
+                        analyserNode.fftSize = 2048;
                         gainNode.connect(analyserNode);
                         analyserNode.connect(audioContext.destination);
-
-                        // 存储节点引用
                         track.gainNode = gainNode;
                         track.analyserNode = analyserNode;
                         track.timeDomainData = new Float32Array(analyserNode.fftSize);
                     });
 
-                    // 加载所有音频轨道
                     await loadAudioTracksWithProgress();
-
-                    // 加载完成后，启用混音器交互
                     mixerTracksContainer.classList.remove('opacity-50', 'pointer-events-none');
-
                     playPauseBtn.disabled = false;
-                    play(); // 自动开始播放
+                    play();
 
                 } catch (error) {
                     console.error("音频初始化失败：", error);
-                    // 显示错误状态
                     loadingIcon.classList.add('hidden');
                     loadingText.classList.add('hidden');
                     errorText.classList.remove('hidden');
@@ -381,83 +352,104 @@
                 const loadProgressPercentSpan = document.getElementById('load-progress-percent');
 
                 const loadPromises = tracks.map(async (track) => {
+                    // 确保 track.file 属性存在
+                    if (!track.file) {
+                        throw new Error(`轨道 "${track.name}" 的文件路径未设置。`);
+                    }
                     const response = await fetch(track.file);
                     if (!response.ok) throw new Error(`无法加载 ${track.file}`);
                     if (!response.body) throw new Error('浏览器不支持流式读取');
 
                     const reader = response.body.getReader();
                     const chunks = [];
-
-                    // 读取数据流
                     while (true) {
                         const { done, value } = await reader.read();
                         if (done) break;
-
                         chunks.push(value);
                         loadedBytes += value.length;
-
-                        // 如果已经获取了总大小，则更新进度百分比
                         if (totalDownloadSize > 0) {
                             const percent = Math.min(100, Math.round((loadedBytes / totalDownloadSize) * 100));
-                            if (loadProgressPercentSpan) {
-                                loadProgressPercentSpan.textContent = percent;
-                            }
+                            if (loadProgressPercentSpan) loadProgressPercentSpan.textContent = percent;
                         }
                     }
-
-                    // 将数据块合并为 Blob，然后解码为 AudioBuffer
                     const blob = new Blob(chunks);
                     const arrayBuffer = await blob.arrayBuffer();
                     track.audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                    return track.audioBuffer.duration; // 返回音频时长
+                    return track.audioBuffer.duration;
                 });
 
                 const results = await Promise.allSettled(loadPromises);
                 const successfulLoads = results.filter(r => r.status === 'fulfilled').map(r => r.value);
 
-                // 检查是否有加载失败的轨道
                 if (results.some(r => r.status === 'rejected')) {
                     const failed = results.find(r => r.status === 'rejected');
                     throw new Error(`加载失败: ${failed.reason.message}`);
                 }
 
-                // 设置播放器总时长为所有轨道中最短的时长
                 minDuration = Math.min(...successfulLoads);
                 masterProgress.max = minDuration;
                 totalDurationDisplay.textContent = formatTime(minDuration);
-                // 显示播放器进度条
                 progressStatusContainer.classList.add('hidden');
                 playerProgressContainer.classList.remove('hidden');
             }
 
             /**
-             * @function displayTotalFileSize
-             * @description 使用 HEAD 请求获取所有音频文件的总大小，用于计算加载进度
+             * @function calculateTotalSize
+             * @description 使用 HEAD 请求获取所有音频文件的总大小并更新UI
+             * @param {string} extension - 文件扩展名 ('ogg' 或 'm4a')
+             * @param {HTMLElement} spanElement - 用于显示大小的 span 元素
+             * @returns {Promise<number>} 文件总大小（字节）
              */
-            async function displayTotalFileSize() {
+            async function calculateTotalSize(extension, spanElement) {
+                let totalBytes = 0;
                 try {
-                    const promises = tracksData.map(track => fetch(track.file, { method: 'HEAD' }));
+                    const promises = tracksData.map(track => {
+                        const url = `${track.baseName}.${extension}`;
+                        return fetch(url, { method: 'HEAD' });
+                    });
                     const results = await Promise.allSettled(promises);
 
-                    let totalBytes = 0;
                     for (const result of results) {
                         if (result.status === 'fulfilled' && result.value.ok) {
                             const size = result.value.headers.get('content-length');
-                            if (size) {
-                                totalBytes += parseInt(size, 10);
-                            }
+                            if (size) totalBytes += parseInt(size, 10);
                         }
                     }
 
                     if (totalBytes > 0) {
-                        totalDownloadSize = totalBytes;
                         const totalMB = (totalBytes / (1024 * 1024)).toFixed(1);
-                        loadingText.textContent += `（${totalMB}MB）`;
+                        spanElement.textContent = `（${totalMB}MB）`;
+                    } else {
+                        spanElement.textContent = `（未知大小）`;
                     }
                 } catch (error) {
-                    console.warn("无法获取文件总大小：", error);
+                    console.warn(`无法获取 ${extension} 文件总大小：`, error);
+                    spanElement.textContent = `（获取失败）`;
                 }
+                return totalBytes;
             }
+
+            /**
+             * @function startLoading
+             * @description 用户选择质量后开始加载流程
+             * @param {'hq' | 'lq'} quality - 音频质量 ('hq' or 'lq')
+             */
+            function startLoading(quality) {
+                // 1. 更新UI：隐藏选择按钮，显示播放器控件
+                qualitySelectionContainer.classList.add('hidden');
+                mainPlayerControls.classList.remove('hidden');
+
+                // 2. 根据选择设置文件路径和总下载大小
+                const extension = quality === 'hq' ? 'ogg' : 'm4a';
+                tracks.forEach(track => {
+                    track.file = `${track.baseName}.${extension}`;
+                });
+                totalDownloadSize = (quality === 'hq') ? storedHqBytes : storedLqBytes;
+
+                // 3. 开始初始化和加载音频
+                initializeAudio();
+            }
+
 
             /**
              * @function play
@@ -465,24 +457,21 @@
              */
             function play() {
                 if (isPlaying) return;
-                // 如果 AudioContext 被挂起（例如，由于用户交互限制），则恢复它
                 if (audioContext.state === 'suspended') audioContext.resume();
-                // 如果播放已结束，则从头开始
                 if (startOffset >= minDuration) startOffset = 0;
 
-                // 为每个轨道创建并启动一个新的 BufferSourceNode
                 tracks.forEach(track => {
                     const source = audioContext.createBufferSource();
                     source.buffer = track.audioBuffer;
                     source.connect(track.gainNode);
-                    source.start(0, startOffset); // 从指定的偏移量开始播放
-                    track.sourceNode = source; // 保存对源节点的引用，以便稍后停止
+                    source.start(0, startOffset);
+                    track.sourceNode = source;
                 });
 
                 isPlaying = true;
-                startTime = audioContext.currentTime; // 记录开始播放的时间
+                startTime = audioContext.currentTime;
                 updatePlayPauseButton();
-                animationFrameId = requestAnimationFrame(updateProgress); // 开始更新循环
+                animationFrameId = requestAnimationFrame(updateProgress);
             }
             /**
              * @function pause
@@ -490,9 +479,8 @@
              */
             function pause() {
                 if (!isPlaying) return;
-                cancelAnimationFrame(animationFrameId); // 停止更新循环
+                cancelAnimationFrame(animationFrameId);
 
-                // 停止并断开所有源节点
                 tracks.forEach(track => {
                     if (track.sourceNode) {
                         track.sourceNode.stop(0);
@@ -502,7 +490,6 @@
                 });
 
                 isPlaying = false;
-                // 计算并保存当前的播放偏移量
                 startOffset += audioContext.currentTime - startTime;
                 updatePlayPauseButton();
             }
@@ -520,7 +507,6 @@
                 const seekTime = parseFloat(masterProgress.value);
                 startOffset = seekTime;
                 currentTimeDisplay.textContent = formatTime(seekTime);
-                // 如果正在播放，则先暂停再从新位置开始播放，以应用跳转
                 if (isPlaying) {
                     pause();
                     play();
@@ -533,40 +519,27 @@
              * @description 更新所有音轨的实时音频电平表
              */
             function updateLevelMeters() {
-                const MIN_DB = -60.0; // 电平表显示的最小分贝值
-
+                const MIN_DB = -60.0;
                 tracks.forEach(track => {
                     const meterBar = track.ui.meterBar;
                     if (!track.analyserNode || !meterBar) return;
-
-                    // 获取时域数据
                     track.analyserNode.getFloatTimeDomainData(track.timeDomainData);
-
-                    // 计算峰值振幅
                     let peakAmplitude = 0.0;
                     for (const sample of track.timeDomainData) {
                         const absSample = Math.abs(sample);
-                        if (absSample > peakAmplitude) {
-                            peakAmplitude = absSample;
-                        }
+                        if (absSample > peakAmplitude) peakAmplitude = absSample;
                     }
-
                     if (peakAmplitude === 0) {
                         meterBar.style.width = '0%';
                         return;
                     }
-
-                    // 将振幅转换为分贝
                     const peakDb = 20 * Math.log10(peakAmplitude);
-
-                    // 将分贝值映射到 0-100% 的范围（使用平方曲线使视觉效果更自然）
                     let levelPercent;
                     if (peakDb < MIN_DB) {
                         levelPercent = 0;
                     } else {
                         levelPercent = ((((peakDb - MIN_DB) / (0 - MIN_DB)) ** 2) * 100) | 0;
                     }
-
                     meterBar.style.width = `${Math.min(100, Math.max(0, levelPercent))}%`;
                 });
             }
@@ -577,24 +550,20 @@
              */
             function updateProgress() {
                 if (!isPlaying) return;
-
                 const elapsed = audioContext.currentTime - startTime;
                 const newCurrentTime = startOffset + elapsed;
-
-                // 如果播放到达末尾
                 if (newCurrentTime >= minDuration) {
                     pause();
                     startOffset = minDuration;
                     masterProgress.value = minDuration;
                 } else {
-                    // 只有在用户没有拖动进度条时才更新
                     if (!isSeeking) {
                         masterProgress.value = newCurrentTime;
                         currentTimeDisplay.textContent = formatTime(newCurrentTime);
                     }
-                    animationFrameId = requestAnimationFrame(updateProgress); // 请求下一帧
+                    animationFrameId = requestAnimationFrame(updateProgress);
                 }
-                updateLevelMeters(); // 同时更新电平表
+                updateLevelMeters();
             }
 
             /**
@@ -602,29 +571,17 @@
              * @description 绑定所有 UI 元素的事件监听器
              */
             function bindUIEvents() {
-                // 播放/暂停按钮
-                playPauseBtn.addEventListener('click', () => {
-                    // 如果尚未初始化，则先初始化音频；否则，切换播放状态
-                    if (!isInitialized) initializeAudio(); else togglePlayPause();
-                });
-                // 主进度条
-                masterProgress.addEventListener('input', () => { isSeeking = true; }); // 拖动时设置标志
-                masterProgress.addEventListener('change', () => { isSeeking = false; seek(); }); // 拖动结束后跳转
-
-                // 为每个音轨的 UI 元素绑定事件
+                playPauseBtn.addEventListener('click', togglePlayPause);
+                masterProgress.addEventListener('input', () => { isSeeking = true; });
+                masterProgress.addEventListener('change', () => { isSeeking = false; seek(); });
                 tracks.forEach((track) => {
                     track.ui.volumeSlider.addEventListener('input', e => handleVolumeChange(e, track));
                     track.ui.muteBtn.addEventListener('click', () => toggleMute(track));
-                    // 触摸和鼠标事件，用于显示/隐藏音量提示框
                     track.ui.volumeSlider.addEventListener('mousedown', () => showTooltip(track.ui));
                     track.ui.volumeSlider.addEventListener('touchstart', () => showTooltip(track.ui), { passive: true });
                     track.ui.volumeSlider.addEventListener('input', () => updateTooltip(track.ui));
                 });
-
-                // 全局事件，用于在鼠标/触摸结束时隐藏所有提示框
-                const hideAllTooltips = () => {
-                    tracks.forEach(track => hideTooltip(track.ui));
-                };
+                const hideAllTooltips = () => { tracks.forEach(track => hideTooltip(track.ui)); };
                 document.addEventListener('mouseup', hideAllTooltips);
                 document.addEventListener('touchend', hideAllTooltips);
             }
@@ -632,30 +589,21 @@
             /**
              * @function handleVolumeChange
              * @description 处理音量滑块的变化
-             * @param {Event} e - 事件对象
-             * @param {object} track - 目标音轨对象
              */
             function handleVolumeChange(e, track) {
                 const value = parseFloat(e.target.value);
                 const volume = value / 100;
-                if (track.gainNode) {
-                    // 使用 setValueAtTime 平滑地改变音量
-                    track.gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
-                }
+                if (track.gainNode) track.gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
                 track.isMuted = (value === 0);
-                if (volume > 0) {
-                    track.lastVolume = volume; // 记录非静音时的音量
-                } else {
-                    track.lastVolume = 0;
-                }
-                updateMuteVisuals(track); // 更新静音按钮状态
-                updateVolumeSliderFill(track.ui.volumeSlider, value); // 更新滑块填充
+                if (volume > 0) track.lastVolume = volume;
+                else track.lastVolume = 0;
+                updateMuteVisuals(track);
+                updateVolumeSliderFill(track.ui.volumeSlider, value);
             }
 
             /**
              * @function toggleMute
              * @description 切换音轨的静音状态
-             * @param {object} track - 目标音轨对象
              */
             function toggleMute(track) {
                 track.isMuted = !track.isMuted;
@@ -663,7 +611,6 @@
                     if (track.isMuted) {
                         track.gainNode.gain.setValueAtTime(0, audioContext.currentTime);
                     } else {
-                        // 取消静音时，恢复到上次的音量或默认音量
                         const volumeToRestore = track.lastVolume > 0 ? track.lastVolume : 0.75;
                         track.gainNode.gain.setValueAtTime(volumeToRestore, audioContext.currentTime);
                         track.ui.volumeSlider.value = volumeToRestore * 100;
@@ -680,7 +627,6 @@
                 loadingIcon.classList.add('hidden');
                 playIcon.classList.toggle('hidden', isPlaying);
                 pauseIcon.classList.toggle('hidden', !isPlaying);
-                // 播放时按钮变为琥珀色，暂停时为蓝色
                 if (isPlaying) {
                     playPauseBtn.classList.replace('bg-blue-500', 'bg-amber-500');
                     playPauseBtn.classList.replace('hover:bg-blue-600', 'hover:bg-amber-600');
@@ -696,10 +642,7 @@
             function updateMuteVisuals(track) {
                 track.ui.muteBtn.innerHTML = track.isMuted ? ICONS.muted : ICONS.unmuted;
                 track.ui.volumeSlider.style.opacity = track.isMuted ? '0.5' : '1';
-                // 在音频初始化前，根据默认音量设置图标
-                if (!track.gainNode) {
-                    track.ui.muteBtn.innerHTML = (track.defaultVolume > 0) ? ICONS.unmuted : ICONS.muted;
-                }
+                if (!track.gainNode) track.ui.muteBtn.innerHTML = (track.defaultVolume > 0) ? ICONS.unmuted : ICONS.muted;
             }
             /**
              * @function updateVolumeSliderFill
@@ -709,8 +652,6 @@
             /**
              * @function formatTime
              * @description 将秒数格式化为 mm:ss 格式
-             * @param {number} seconds - 总秒数
-             * @returns {string} 格式化后的时间字符串
              */
             function formatTime(seconds) {
                 const secs = Math.floor(seconds);
@@ -731,14 +672,10 @@
                 const slider = ui.volumeSlider;
                 const value = slider.value;
                 ui.tooltip.textContent = `${value}%`;
-
-                // --- 计算提示框的位置 ---
-                const thumbWidth = 20; // 滑块按钮的宽度
-                const trackWidth = slider.parentElement.offsetWidth; // 轨道宽度
+                const thumbWidth = 20;
+                const trackWidth = slider.parentElement.offsetWidth;
                 const percent = value / 100;
-                // 计算滑块按钮中心的精确位置
                 let thumbPosition = percent * (trackWidth - thumbWidth) + (thumbWidth / 2);
-                // 限制提示框的位置，防止其超出轨道范围
                 thumbPosition = Math.max(ui.tooltip.offsetWidth / 2, Math.min(thumbPosition, trackWidth - ui.tooltip.offsetWidth / 2));
                 ui.tooltip.style.left = `${thumbPosition}px`;
             }
@@ -749,20 +686,33 @@
             function hideTooltip(ui) { ui.tooltip.style.opacity = '0'; }
 
             // --- 初始化执行 ---
-            setupUI(); // 创建 UI
-            bindUIEvents(); // 绑定事件
+            function initialize() {
+                setupUI(); // 创建 UI 骨架
+                bindUIEvents(); // 绑定所有可能用到的事件
+                mixerTracksContainer.classList.add('opacity-50', 'pointer-events-none');
+                tracks.forEach(track => {
+                    updateVolumeSliderFill(track.ui.volumeSlider, track.ui.volumeSlider.value);
+                    updateMuteVisuals(track);
+                });
 
-            // 初始状态下，混音器区域为半透明且不可交互
-            mixerTracksContainer.classList.add('opacity-50', 'pointer-events-none');
+                // 异步计算文件大小并设置按钮
+                (async () => {
+                    hqSizeSpan.textContent = '（计算中…）';
+                    lqSizeSpan.textContent = '（计算中…）';
+                    [storedHqBytes, storedLqBytes] = await Promise.all([
+                        calculateTotalSize('ogg', hqSizeSpan),
+                        calculateTotalSize('m4a', lqSizeSpan)
+                    ]);
+                    loadHqBtn.disabled = false;
+                    loadLqBtn.disabled = false;
+                })();
 
-            // 初始化每个音轨的视觉状态（滑块填充和静音按钮）
-            tracks.forEach(track => {
-                updateVolumeSliderFill(track.ui.volumeSlider, track.ui.volumeSlider.value);
-                updateMuteVisuals(track);
-            });
+                // 绑定质量选择按钮的点击事件
+                loadHqBtn.addEventListener('click', () => startLoading('hq'));
+                loadLqBtn.addEventListener('click', () => startLoading('lq'));
+            }
 
-            // 尝试获取文件总大小以改善加载体验
-            displayTotalFileSize();
+            initialize();
         });
     </script>
 </body>
