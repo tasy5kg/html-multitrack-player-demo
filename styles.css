@@ -111,18 +111,20 @@ input[type="range"]::-moz-range-thumb:hover {
 }
 
 .waveform-path {
-    fill: #10B981; /* 绿色填充 */
+    fill: #10B981;
+    /* 绿色填充 */
     stroke: none;
 }
 
 .waveform-baseline {
-    stroke: #047857; /* 深绿色 */
+    stroke: #047857;
+    /* 深绿色 */
     stroke-width: 1;
 }
 
 .waveform-progress-line {
-    stroke: #EF4444; /* 红色 */
-    /* --- 修改点 2: 加粗红线 --- */
-    stroke-width: 2; /* 从 1.5 改为 2 */
+    stroke: #EF4444;
+    /* 红色 */
+    stroke-width: 2;
     transition: transform 0.025s ease-in-out;
 }

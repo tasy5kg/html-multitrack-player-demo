@@ -60,10 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // --- SVG 图标 ---
-    const ICONS = {
-        unmuted: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"></path></svg>`,
-        muted: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="text-red-500"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"></path></svg>`
-    };
+    // 已移除静音图标
 
     // --- 歌曲选择相关 ---
     async function loadSongsList() {
@@ -96,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
             mainPlayerControls.classList.add('hidden');
             mixerTracksContainer.innerHTML = '';
             isInitialized = false;
-            
+
             if (resizeObserver) {
                 resizeObserver.disconnect();
                 resizeObserver = null;
@@ -127,16 +124,12 @@ document.addEventListener('DOMContentLoaded', () => {
         tracksData.forEach((trackData) => {
             const trackElement = document.createElement('div');
             trackElement.className = 'py-4';
-            const labelAndMuteContainer = document.createElement('div');
-            labelAndMuteContainer.className = 'flex justify-between items-center';
+            const labelContainer = document.createElement('div');
+            labelContainer.className = 'flex items-center';
             const label = document.createElement('label');
             label.textContent = trackData.name;
             label.className = 'text-sm font-bold text-gray-700';
-            const muteBtn = document.createElement('button');
-            muteBtn.className = 'text-gray-400 hover:text-gray-600 transition-colors';
-            muteBtn.innerHTML = (trackData.defaultVolume === 0) ? ICONS.muted : ICONS.unmuted;
-            labelAndMuteContainer.appendChild(label);
-            labelAndMuteContainer.appendChild(muteBtn);
+            labelContainer.appendChild(label);
             const controlsContainer = document.createElement('div');
             controlsContainer.className = 'flex items-center space-x-2 mt-2';
             const sliderWrapper = document.createElement('div');
@@ -166,13 +159,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const waveformContainer = document.createElement('div');
             waveformContainer.className = 'waveform-container';
-            
-            trackElement.appendChild(labelAndMuteContainer);
+
+            trackElement.appendChild(labelContainer);
             trackElement.appendChild(controlsContainer);
             trackElement.appendChild(waveformContainer);
             mixerTracksContainer.appendChild(trackElement);
-            
-            tracks.push({ ...trackData, isMuted: trackData.defaultVolume === 0, lastVolume: trackData.defaultVolume / 100, ui: { volumeSlider, muteBtn, tooltip: volumeTooltip, meterBar, waveformContainer } });
+
+            tracks.push({ ...trackData, lastVolume: trackData.defaultVolume / 100, ui: { volumeSlider, tooltip: volumeTooltip, meterBar, waveformContainer } });
         });
     }
 
@@ -191,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             tracks.forEach(track => {
                 const gainNode = audioContext.createGain();
-                gainNode.gain.value = track.isMuted ? 0 : track.lastVolume;
+                gainNode.gain.value = track.lastVolume;
                 const analyserNode = audioContext.createAnalyser();
                 analyserNode.fftSize = 2048;
                 gainNode.connect(analyserNode);
@@ -204,9 +197,9 @@ document.addEventListener('DOMContentLoaded', () => {
             await loadAudioTracksWithProgress();
             mixerTracksContainer.classList.remove('opacity-50', 'pointer-events-none');
             playPauseBtn.disabled = false;
-            
+
             initializeResizeObserver();
-            
+
             play();
 
         } catch (error) {
@@ -248,7 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const blob = new Blob(chunks);
             const arrayBuffer = await blob.arrayBuffer();
             track.audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-            
+
             track.waveformData = generateWaveformData(track.audioBuffer);
 
             return track.audioBuffer.duration;
@@ -267,7 +260,7 @@ document.addEventListener('DOMContentLoaded', () => {
         totalDurationDisplay.textContent = formatTime(minDuration);
         progressStatusContainer.classList.add('hidden');
         playerProgressContainer.classList.remove('hidden');
-        
+
         tracks.forEach(track => {
             drawWaveform(track);
         });
@@ -313,8 +306,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const container = ui.waveformContainer;
         if (!waveformData || waveformData.length === 0) return;
 
-        const width = waveformData.length; 
-        const height = 100; 
+        const width = waveformData.length;
+        const height = 100;
         const halfHeight = height / 2;
 
         let pathData = `M 0 ${halfHeight}`;
@@ -334,11 +327,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const svg = document.createElementNS(svgNS, "svg");
         svg.setAttribute('class', 'waveform-svg');
         svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-        svg.setAttribute('preserveAspectRatio', 'none'); 
+        svg.setAttribute('preserveAspectRatio', 'none');
 
         const path = document.createElementNS(svgNS, "path");
         path.setAttribute('d', pathData);
-        path.setAttribute('fill', '#10B981'); 
+        path.setAttribute('fill', '#10B981');
         path.setAttribute('stroke', 'none');
 
         const baseline = document.createElementNS(svgNS, "line");
@@ -361,7 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
         svg.appendChild(progressLine);
         container.innerHTML = '';
         container.appendChild(svg);
-        
+
         updateWaveformProgressLine(startOffset);
 
         if (!container.dataset.hasClickListener) {
@@ -369,7 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const rect = container.getBoundingClientRect();
                 const clickX = e.clientX - rect.left;
                 const seekTime = (clickX / rect.width) * minDuration;
-                
+
                 if (isPlaying) {
                     pause();
                     startOffset = seekTime;
@@ -384,7 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
             container.dataset.hasClickListener = 'true';
         }
     }
-    
+
     /**
      * @function initializeResizeObserver
      * @description 监听波形图容器尺寸变化并重绘
@@ -490,7 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     track.sourceNode.stop(0);
                     track.sourceNode.disconnect();
-                } catch(e) { /* 已经停止则忽略 */ }
+                } catch (e) { /* 已经停止则忽略 */ }
                 track.sourceNode = null;
             }
         });
@@ -556,11 +549,11 @@ document.addEventListener('DOMContentLoaded', () => {
             cancelAnimationFrame(animationFrameId);
             return;
         };
-        
+
         // --- 最终修复：结合音频延迟进行校正 ---
-        const latency = audioContext.outputLatency || 0; 
+        const latency = audioContext.outputLatency || 0;
         const newCurrentTime = startOffset + (audioContext.currentTime - startTime) - latency;
-        
+
         if (newCurrentTime >= minDuration) {
             pause();
             startOffset = minDuration;
@@ -577,7 +570,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         updateLevelMeters();
     }
-    
+
     /**
      * @function updateWaveformProgressLine
      * @description 更新所有波形图上的红色播放进度线
@@ -607,7 +600,6 @@ document.addEventListener('DOMContentLoaded', () => {
         masterProgress.addEventListener('change', () => { isSeeking = false; seek(); });
         tracks.forEach((track) => {
             track.ui.volumeSlider.addEventListener('input', e => handleVolumeChange(e, track));
-            track.ui.muteBtn.addEventListener('click', () => toggleMute(track));
             track.ui.volumeSlider.addEventListener('mousedown', () => showTooltip(track.ui));
             track.ui.volumeSlider.addEventListener('touchstart', () => showTooltip(track.ui), { passive: true });
             track.ui.volumeSlider.addEventListener('input', () => updateTooltip(track.ui));
@@ -620,26 +612,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const value = parseFloat(e.target.value);
         const volume = value / 100;
         if (track.gainNode) track.gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
-        track.isMuted = (value === 0);
-        if (volume > 0) track.lastVolume = volume;
-        else track.lastVolume = 0;
-        updateMuteVisuals(track);
+        track.lastVolume = volume;
         updateVolumeSliderFill(track.ui.volumeSlider, value);
     }
-    function toggleMute(track) {
-        track.isMuted = !track.isMuted;
-        if (track.gainNode) {
-            if (track.isMuted) {
-                track.gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-            } else {
-                const volumeToRestore = track.lastVolume > 0 ? track.lastVolume : 0.75;
-                track.gainNode.gain.setValueAtTime(volumeToRestore, audioContext.currentTime);
-                track.ui.volumeSlider.value = volumeToRestore * 100;
-                updateVolumeSliderFill(track.ui.volumeSlider, volumeToRestore * 100);
-            }
-        }
-        updateMuteVisuals(track);
-    }
+    // 已移除 toggleMute 相关逻辑
     function updatePlayPauseButton() {
         loadingIcon.classList.add('hidden');
         playIcon.classList.toggle('hidden', isPlaying);
@@ -652,11 +628,7 @@ document.addEventListener('DOMContentLoaded', () => {
             playPauseBtn.classList.replace('hover:bg-amber-600', 'hover:bg-blue-600');
         }
     }
-    function updateMuteVisuals(track) {
-        track.ui.muteBtn.innerHTML = track.isMuted ? ICONS.muted : ICONS.unmuted;
-        track.ui.volumeSlider.style.opacity = track.isMuted ? '0.5' : '1';
-        if (!track.gainNode) track.ui.muteBtn.innerHTML = (track.defaultVolume > 0) ? ICONS.unmuted : ICONS.muted;
-    }
+    // 已移除 updateMuteVisuals 相关逻辑
     function updateVolumeSliderFill(slider, value) { slider.style.backgroundSize = `${value}% 100%`; }
     function formatTime(seconds) {
         const secs = Math.floor(seconds);
