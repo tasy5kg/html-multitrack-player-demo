@@ -53,72 +53,7 @@ body {
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
 }
 
-/*
- * =============================================
- * Volume Slider (Triangular)
- * =============================================
- */
 
-input[type="range"].volume-slider {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 100%;
-    height: 20px;
-    background: transparent;
-    outline: none;
-    cursor: pointer;
-    position: relative;
-}
-
-/* Triangular track background */
-input[type="range"].volume-slider::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 100%;
-    height: 10px;
-    background: var(--volume-track-bg);
-    clip-path: polygon(0% 100%, 100% 0%, 100% 100%);
-    z-index: 1;
-}
-
-/* Colored fill part */
-input[type="range"].volume-slider::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 100%;
-    height: 10px;
-    background: linear-gradient(to right, var(--volume-track-fill-bg) 0%, var(--volume-track-fill-bg) var(--value-percent, 75%), transparent var(--value-percent, 75%));
-    clip-path: polygon(0% 100%, var(--triangle-x, 75%) var(--triangle-y, 25%), var(--triangle-x, 75%) 100%);
-    z-index: 2;
-}
-
-/* Thumb styles */
-input[type="range"].volume-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 6px;
-    height: 22px;
-    background: var(--thumb-bg);
-    border-radius: 3px;
-    border: 2px solid white;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
-    position: relative;
-    z-index: 3; /* Ensure thumb is on top */
-    transition: transform 0.2s ease-out, background-color 0.2s ease-out;
-}
-
-input[type="range"].volume-slider:hover::-webkit-slider-thumb {
-    transform: scale(1.2);
-}
-
-input[type="range"].volume-slider:active::-webkit-slider-thumb {
-    background-color: var(--thumb-hover-bg);
-    transform: scale(1.3);
-}
 
 /*
  * =============================================
@@ -252,28 +187,95 @@ input[type="range"].volume-slider:active::-webkit-slider-thumb {
 
 /*
  * =============================================
- * Firefox Compatibility
+ * Volume Slider (Triangular) - Cross-Browser Solution
  * =============================================
  */
- 
-/* Basic thumb styles for Firefox */
-input[type="range"]::-moz-range-thumb {
+
+/* 轨道样式现在由这个容器的伪元素创建 */
+.volume-slider-wrapper {
+    /* 这个容器的 position: relative 属性由 Tailwind CSS 类提供 */
+}
+
+/* 将 input 本身变为透明的控制器，它将浮于我们自定义的轨道之上 */
+input[type="range"].volume-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 20px;
+    background: transparent;
+    outline: none;
+    cursor: pointer;
+    position: relative; /* 确保 z-index 生效 */
+    z-index: 3;         /* 将 input 和它的滑块（thumb）置于最顶层 */
+}
+
+/* 移除 Firefox 的默认轨道背景 */
+input[type="range"].volume-slider::-moz-range-track,
+input[type="range"].volume-slider::-moz-range-progress {
+    background-color: transparent;
+}
+
+/* 三角形轨道背景 (灰色部分) - 应用于容器 */
+.volume-slider-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 100%;
+    height: 10px;
+    background: var(--volume-track-bg);
+    clip-path: polygon(0% 100%, 100% 0%, 100% 100%);
+    z-index: 1; /* 在填充层后面 */
+}
+
+/* 彩色填充部分 (绿色部分) - 应用于容器 */
+.volume-slider-wrapper::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 100%;
+    height: 10px;
+    background: var(--volume-track-fill-bg); /* 使用纯色填充 */
+    clip-path: polygon(0% 100%, var(--triangle-x, 75%) var(--triangle-y, 25%), var(--triangle-x, 75%) 100%);
+    z-index: 2; /* 在背景之上，但在滑块之下 */
+}
+
+/*
+ * =============================================
+ * Thumb Styles (滑块样式)
+ * =============================================
+ */
+
+/* Webkit (Chrome, Safari) 的滑块样式 */
+input[type="range"].volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 6px;
+    height: 22px;
+    background: var(--thumb-bg);
+    border-radius: 3px;
     border: 2px solid white;
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
-    border-radius: 3px;
-    cursor: pointer;
+    transition: transform 0.2s ease-out, background-color 0.2s ease-out;
 }
 
-#master-progress::-moz-range-thumb {
-    width: 16px; 
-    height: 16px; 
-    background: #ffffff; 
-    border-radius: 50%;
-    border: 2px solid #3b82f6;
+input[type="range"].volume-slider:hover::-webkit-slider-thumb {
+    transform: scale(1.2);
 }
 
-.volume-slider::-moz-range-thumb {
+input[type="range"].volume-slider:active::-webkit-slider-thumb {
+    background-color: var(--thumb-hover-bg);
+    transform: scale(1.3);
+}
+
+/* Firefox 的滑块样式 */
+input[type="range"].volume-slider::-moz-range-thumb {
     width: 6px; 
     height: 22px; 
     background: var(--thumb-bg);
+    border-radius: 3px;
+    border: 2px solid white;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
 }

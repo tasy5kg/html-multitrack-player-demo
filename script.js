@@ -458,7 +458,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function createVolumeSlider(trackData) {
         const sliderWrapper = document.createElement('div');
-        sliderWrapper.className = 'relative flex-grow h-[20px] flex items-center';
+        sliderWrapper.className = 'volume-slider-wrapper relative flex-grow h-[20px] flex items-center';
         const volumeSlider = document.createElement('input');
         Object.assign(volumeSlider, { type: 'range', min: 0, max: 100, value: trackData.defaultVolume });
         volumeSlider.className = 'volume-slider w-full';
@@ -701,9 +701,15 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function updateVolumeSliderFill(slider, value) {
         const percent = Math.max(0, Math.min(100, value));
-        slider.style.setProperty('--value-percent', `${percent}%`);
-        slider.style.setProperty('--triangle-x', `${percent}%`);
-        slider.style.setProperty('--triangle-y', `${100 - percent}%`);
+        // 从 input 元素（slider）获取其父元素（即 .volume-slider-wrapper）
+        const wrapper = slider.parentElement;
+    
+        // 在父元素上设置 CSS 变量，以便 ::after 伪元素能够正确获取
+        if (wrapper) {
+            wrapper.style.setProperty('--value-percent', `${percent}%`);
+            wrapper.style.setProperty('--triangle-x', `${percent}%`);
+            wrapper.style.setProperty('--triangle-y', `${100 - percent}%`);
+        }
     }
 
     function updateMasterProgressFill() {
