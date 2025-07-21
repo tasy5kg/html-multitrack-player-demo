@@ -1,6 +1,6 @@
 ### 演示地址
 
-#### uniCloud（中国大陆地区访问更快）： https://tasy5kg.github.io/html-multitrack-player-demo/
+#### uniCloud（中国大陆地区访问更快）： https://env-00jxtt59sy4k-static.normal.cloudstatic.cn/
 
 #### GitHub Pages： https://tasy5kg.github.io/html-multitrack-player-demo/
 
