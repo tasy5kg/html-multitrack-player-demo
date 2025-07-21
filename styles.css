@@ -1,0 +1,95 @@
+/* 定义 CSS 变量，用于统一管理颜色 */
+:root {
+    --track-bg: #e5e7eb;
+    /* 滑块轨道的背景色 */
+    --thumb-bg: #3b82f6;
+    /* 滑块按钮的背景色 */
+    --thumb-hover-bg: #2563eb;
+    /* 滑块按钮悬停时的背景色 */
+    --track-fill-bg: #60a5fa;
+    /* 滑块已填充部分的背景色 */
+}
+
+/* 移除移动设备上点击元素时的默认高亮效果 */
+body {
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* --- 自定义范围输入框 (input[type="range"]) 的样式 --- */
+
+/* 重置范围输入框的默认外观 */
+input[type="range"] {
+    -webkit-appearance: none;
+    /* 针对 Webkit 浏览器 */
+    appearance: none;
+    /* 标准属性 */
+    width: 100%;
+    height: 8px;
+    background: var(--track-bg);
+    border-radius: 9999px;
+    /* 圆角 */
+    outline: none;
+    /* 移除焦点时的轮廓 */
+    cursor: pointer;
+    /* 设置鼠标指针为手形 */
+}
+
+/* 自定义 Webkit 浏览器（Chrome, Safari）中滑块按钮的样式 */
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    /* 移除默认外观 */
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: var(--thumb-bg);
+    border-radius: 50%;
+    /* 圆形 */
+    border: 2px solid white;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+    /* 添加阴影效果 */
+    transition: background-color 0.2s ease-in-out;
+    /* 背景色变化的过渡效果 */
+}
+
+/* Webkit 浏览器中滑块按钮悬停时的样式 */
+input[type="range"]::-webkit-slider-thumb:hover {
+    background: var(--thumb-hover-bg);
+}
+
+/* 自定义 Firefox 浏览器中滑块按钮的样式 */
+input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: var(--thumb-bg);
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+/* Firefox 浏览器中滑块按钮悬停时的样式 */
+input[type="range"]::-moz-range-thumb:hover {
+    background: var(--thumb-hover-bg);
+}
+
+/* --- 音量滑块的填充效果 --- */
+.volume-slider {
+    position: relative;
+    /* 使用线性渐变来模拟滑块的填充效果 */
+    background-image: linear-gradient(var(--track-fill-bg), var(--track-fill-bg));
+    background-repeat: no-repeat;
+    /* 初始填充75% */
+    background-size: 75% 100%;
+}
+
+/* 节拍器滑块默认没有填充 */
+.volume-slider.metronome {
+    background-size: 0% 100%;
+}
+
+/* --- 音量提示框样式 --- */
+.volume-tooltip {
+    /* 将提示框定位在滑块按钮上方 */
+    transform: translate(-50%, -26px);
+}
