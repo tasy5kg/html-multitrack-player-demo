@@ -39,6 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let songsList = [];
     let currentSong = null;
     let tracksData = [];
+    let resizeObserver = null;
+
 
     // --- SVG 图标 ---
     const ICONS = {
@@ -77,6 +79,12 @@ document.addEventListener('DOMContentLoaded', () => {
             mainPlayerControls.classList.add('hidden');
             mixerTracksContainer.innerHTML = '';
             isInitialized = false;
+            
+            if (resizeObserver) {
+                resizeObserver.disconnect();
+                resizeObserver = null;
+            }
+
             tracks = [];
             hqSizeSpan.textContent = '（计算中…）';
             lqSizeSpan.textContent = '（计算中…）';
@@ -98,7 +106,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function setupUI() {
         mixerTracksContainer.innerHTML = '';
         tracks = [];
-        // 音轨区域初始禁用（灰色且不可操作）
         mixerTracksContainer.classList.add('opacity-50', 'pointer-events-none');
         tracksData.forEach((trackData) => {
             const trackElement = document.createElement('div');
@@ -110,7 +117,6 @@ document.addEventListener('DOMContentLoaded', () => {
             label.className = 'text-sm font-bold text-gray-700';
             const muteBtn = document.createElement('button');
             muteBtn.className = 'text-gray-400 hover:text-gray-600 transition-colors';
-            // 设置初始静音图标
             muteBtn.innerHTML = (trackData.defaultVolume === 0) ? ICONS.muted : ICONS.unmuted;
             labelAndMuteContainer.appendChild(label);
             labelAndMuteContainer.appendChild(muteBtn);
@@ -140,10 +146,16 @@ document.addEventListener('DOMContentLoaded', () => {
             meterWrapper.appendChild(meterContainer);
             controlsContainer.appendChild(sliderWrapper);
             controlsContainer.appendChild(meterWrapper);
+
+            const waveformContainer = document.createElement('div');
+            waveformContainer.className = 'waveform-container';
+            
             trackElement.appendChild(labelAndMuteContainer);
             trackElement.appendChild(controlsContainer);
+            trackElement.appendChild(waveformContainer);
             mixerTracksContainer.appendChild(trackElement);
-            tracks.push({ ...trackData, isMuted: trackData.defaultVolume === 0, lastVolume: trackData.defaultVolume / 100, ui: { volumeSlider, muteBtn, tooltip: volumeTooltip, meterBar } });
+            
+            tracks.push({ ...trackData, isMuted: trackData.defaultVolume === 0, lastVolume: trackData.defaultVolume / 100, ui: { volumeSlider, muteBtn, tooltip: volumeTooltip, meterBar, waveformContainer } });
         });
     }
 
@@ -175,6 +187,9 @@ document.addEventListener('DOMContentLoaded', () => {
             await loadAudioTracksWithProgress();
             mixerTracksContainer.classList.remove('opacity-50', 'pointer-events-none');
             playPauseBtn.disabled = false;
+            
+            initializeResizeObserver();
+            
             play();
 
         } catch (error) {
@@ -196,9 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const loadProgressPercentSpan = document.getElementById('load-progress-percent');
 
         const loadPromises = tracks.map(async (track) => {
-            if (!track.file) {
-                throw new Error(`轨道 "${track.name}" 的文件路径未设置。`);
-            }
+            if (!track.file) throw new Error(`轨道 "${track.name}" 的文件路径未设置。`);
             const response = await fetch(track.file);
             if (!response.ok) throw new Error(`无法加载 ${track.file}`);
             if (!response.body) throw new Error('浏览器不支持流式读取');
@@ -218,6 +231,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const blob = new Blob(chunks);
             const arrayBuffer = await blob.arrayBuffer();
             track.audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+            
+            track.waveformData = generateWaveformData(track.audioBuffer);
+
             return track.audioBuffer.duration;
         });
 
@@ -234,14 +250,148 @@ document.addEventListener('DOMContentLoaded', () => {
         totalDurationDisplay.textContent = formatTime(minDuration);
         progressStatusContainer.classList.add('hidden');
         playerProgressContainer.classList.remove('hidden');
+        
+        tracks.forEach(track => {
+            drawWaveform(track);
+        });
+    }
+
+    /**
+     * @function generateWaveformData
+     * @description 根据音频数据生成精确的波形数据点
+     */
+    function generateWaveformData(audioBuffer) {
+        const sampleInterval = 0.1;
+        const numberOfChannels = audioBuffer.numberOfChannels;
+        const channelsData = Array.from({ length: numberOfChannels }, (_, i) => audioBuffer.getChannelData(i));
+        const sampleRate = audioBuffer.sampleRate;
+        const samplesPerPoint = Math.floor(sampleRate * sampleInterval);
+        const pointsCount = Math.floor(audioBuffer.duration / sampleInterval);
+        const waveformPoints = [];
+
+        for (let i = 0; i < pointsCount; i++) {
+            const start = i * samplesPerPoint;
+            const end = Math.min(start + samplesPerPoint, audioBuffer.length);
+            let min = 1.0;
+            let max = -1.0;
+
+            for (let j = start; j < end; j++) {
+                for (let channel = 0; channel < numberOfChannels; channel++) {
+                    const sample = channelsData[channel][j];
+                    if (sample < min) min = sample;
+                    if (sample > max) max = sample;
+                }
+            }
+            waveformPoints.push({ min, max });
+        }
+        return waveformPoints;
+    }
+
+    /**
+     * @function drawWaveform
+     * @description 使用预先计算好的数据绘制单个音轨的波形图
+     */
+    function drawWaveform(track) {
+        const { ui, waveformData } = track;
+        const container = ui.waveformContainer;
+        if (!waveformData || waveformData.length === 0) return;
+
+        const width = waveformData.length; 
+        const height = 100; 
+        const halfHeight = height / 2;
+
+        let pathData = `M 0 ${halfHeight}`;
+        for (let i = 0; i < waveformData.length; i++) {
+            const point = waveformData[i];
+            const y1 = halfHeight - (point.max * halfHeight);
+            pathData += ` L ${i} ${y1}`;
+        }
+        for (let i = waveformData.length - 1; i >= 0; i--) {
+            const point = waveformData[i];
+            const y2 = halfHeight - (point.min * halfHeight);
+            pathData += ` L ${i} ${y2}`;
+        }
+        pathData += ' Z';
+
+        const svgNS = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(svgNS, "svg");
+        svg.setAttribute('class', 'waveform-svg');
+        svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+        svg.setAttribute('preserveAspectRatio', 'none'); 
+
+        const path = document.createElementNS(svgNS, "path");
+        path.setAttribute('d', pathData);
+        path.setAttribute('fill', '#10B981'); 
+        path.setAttribute('stroke', 'none');
+
+        const baseline = document.createElementNS(svgNS, "line");
+        baseline.setAttribute('x1', '0');
+        baseline.setAttribute('y1', halfHeight.toString());
+        baseline.setAttribute('x2', width.toString());
+        baseline.setAttribute('y2', halfHeight.toString());
+        baseline.setAttribute('class', 'waveform-baseline');
+
+        const progressLine = document.createElementNS(svgNS, "line");
+        progressLine.setAttribute('x1', '0');
+        progressLine.setAttribute('y1', '0');
+        progressLine.setAttribute('x2', '0');
+        progressLine.setAttribute('y2', height.toString());
+        progressLine.setAttribute('class', 'waveform-progress-line');
+        track.ui.progressLine = progressLine;
+
+        svg.appendChild(path);
+        svg.appendChild(baseline);
+        svg.appendChild(progressLine);
+        container.innerHTML = '';
+        container.appendChild(svg);
+        
+        updateWaveformProgressLine(startOffset);
+
+        if (!container.dataset.hasClickListener) {
+            container.addEventListener('click', (e) => {
+                const rect = container.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const seekTime = (clickX / rect.width) * minDuration;
+                
+                if (isPlaying) {
+                    pause();
+                    startOffset = seekTime;
+                    play();
+                } else {
+                    startOffset = seekTime;
+                    masterProgress.value = seekTime;
+                    currentTimeDisplay.textContent = formatTime(seekTime);
+                    updateWaveformProgressLine(seekTime);
+                }
+            });
+            container.dataset.hasClickListener = 'true';
+        }
+    }
+    
+    /**
+     * @function initializeResizeObserver
+     * @description 监听波形图容器尺寸变化并重绘
+     */
+    function initializeResizeObserver() {
+        if (resizeObserver) resizeObserver.disconnect();
+
+        resizeObserver = new ResizeObserver(() => {
+            requestAnimationFrame(() => {
+                const currentTime = startOffset + (isPlaying ? (audioContext.currentTime - startTime) : 0);
+                updateWaveformProgressLine(currentTime);
+            });
+        });
+
+        tracks.forEach(track => {
+            if (track.ui.waveformContainer) {
+                resizeObserver.observe(track.ui.waveformContainer);
+            }
+        });
     }
 
     /**
      * @function calculateTotalSize
      * @description 使用 HEAD 请求获取所有音频文件的总大小并更新UI
-     * @param {string} extension - 文件扩展名 ('ogg' 或 'm4a')
-     * @param {HTMLElement} spanElement - 用于显示大小的 span 元素
-     * @returns {Promise<number>} 文件总大小（字节）
      */
     async function calculateTotalSize(extension, spanElement) {
         let totalBytes = 0;
@@ -273,7 +423,6 @@ document.addEventListener('DOMContentLoaded', () => {
     /**
      * @function startLoading
      * @description 用户选择质量后开始加载流程
-     * @param {'hq' | 'lq'} quality - 音频质量 ('hq' or 'lq')
      */
     function startLoading(quality) {
         qualitySelectionContainer.classList.add('hidden');
@@ -286,14 +435,15 @@ document.addEventListener('DOMContentLoaded', () => {
         initializeAudio();
     }
 
-
     /**
      * @function play
      * @description 开始或继续播放所有音轨
      */
     function play() {
         if (isPlaying) return;
-        if (audioContext.state === 'suspended') audioContext.resume();
+        if (audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
         if (startOffset >= minDuration) startOffset = 0;
 
         tracks.forEach(track => {
@@ -315,18 +465,21 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function pause() {
         if (!isPlaying) return;
+        const elapsed = audioContext.currentTime - startTime;
         cancelAnimationFrame(animationFrameId);
 
         tracks.forEach(track => {
             if (track.sourceNode) {
-                track.sourceNode.stop(0);
-                track.sourceNode.disconnect();
+                try {
+                    track.sourceNode.stop(0);
+                    track.sourceNode.disconnect();
+                } catch(e) { /* 已经停止则忽略 */ }
                 track.sourceNode = null;
             }
         });
 
         isPlaying = false;
-        startOffset += audioContext.currentTime - startTime;
+        startOffset += elapsed;
         updatePlayPauseButton();
     }
     /**
@@ -341,14 +494,16 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function seek() {
         const seekTime = parseFloat(masterProgress.value);
-        startOffset = seekTime;
-        currentTimeDisplay.textContent = formatTime(seekTime);
         if (isPlaying) {
             pause();
+            startOffset = seekTime;
             play();
+        } else {
+            startOffset = seekTime;
+            currentTimeDisplay.textContent = formatTime(seekTime);
+            updateWaveformProgressLine(seekTime);
         }
     }
-
 
     /**
      * @function updateLevelMeters
@@ -370,12 +525,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             const peakDb = 20 * Math.log10(peakAmplitude);
-            let levelPercent;
-            if (peakDb < MIN_DB) {
-                levelPercent = 0;
-            } else {
-                levelPercent = ((((peakDb - MIN_DB) / (0 - MIN_DB)) ** 2) * 100) | 0;
-            }
+            let levelPercent = peakDb < MIN_DB ? 0 : ((((peakDb - MIN_DB) / (0 - MIN_DB)) ** 2) * 100) | 0;
             meterBar.style.width = `${Math.min(100, Math.max(0, levelPercent))}%`;
         });
     }
@@ -385,27 +535,55 @@ document.addEventListener('DOMContentLoaded', () => {
      * @description 使用 requestAnimationFrame 循环更新主进度条和时间显示
      */
     function updateProgress() {
-        if (!isPlaying) return;
-        const elapsed = audioContext.currentTime - startTime;
-        const newCurrentTime = startOffset + elapsed;
+        if (!isPlaying) {
+            cancelAnimationFrame(animationFrameId);
+            return;
+        };
+        
+        // --- 最终修复：结合音频延迟进行校正 ---
+        const latency = audioContext.outputLatency || 0; 
+        const newCurrentTime = startOffset + (audioContext.currentTime - startTime) - latency;
+        
         if (newCurrentTime >= minDuration) {
             pause();
             startOffset = minDuration;
             masterProgress.value = minDuration;
+            currentTimeDisplay.textContent = formatTime(minDuration);
+            updateWaveformProgressLine(minDuration);
         } else {
             if (!isSeeking) {
                 masterProgress.value = newCurrentTime;
                 currentTimeDisplay.textContent = formatTime(newCurrentTime);
+                updateWaveformProgressLine(newCurrentTime);
             }
             animationFrameId = requestAnimationFrame(updateProgress);
         }
         updateLevelMeters();
     }
-
+    
     /**
-     * @function bindUIEvents
-     * @description 绑定所有 UI 元素的事件监听器
+     * @function updateWaveformProgressLine
+     * @description 更新所有波形图上的红色播放进度线
+     * @param {number} currentTime - 当前播放时间
      */
+    function updateWaveformProgressLine(currentTime) {
+        tracks.forEach(track => {
+            if (track.ui.progressLine && track.waveformData && track.audioBuffer) {
+                const trackDuration = track.audioBuffer.duration;
+                const progressPercent = Math.max(0, Math.min(1, currentTime / trackDuration));
+                const xPos = progressPercent * track.waveformData.length;
+                track.ui.progressLine.setAttribute('transform', `translate(${xPos}, 0)`);
+
+                if (currentTime >= trackDuration) {
+                    track.ui.progressLine.style.display = 'none';
+                } else {
+                    track.ui.progressLine.style.display = 'block';
+                }
+            }
+        });
+    }
+
+    // --- 其他 UI 事件函数 (无需修改) ---
     function bindUIEvents() {
         playPauseBtn.addEventListener('click', togglePlayPause);
         masterProgress.addEventListener('input', () => { isSeeking = true; });
@@ -421,11 +599,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('mouseup', hideAllTooltips);
         document.addEventListener('touchend', hideAllTooltips);
     }
-
-    /**
-     * @function handleVolumeChange
-     * @description 处理音量滑块的变化
-     */
     function handleVolumeChange(e, track) {
         const value = parseFloat(e.target.value);
         const volume = value / 100;
@@ -436,11 +609,6 @@ document.addEventListener('DOMContentLoaded', () => {
         updateMuteVisuals(track);
         updateVolumeSliderFill(track.ui.volumeSlider, value);
     }
-
-    /**
-     * @function toggleMute
-     * @description 切换音轨的静音状态
-     */
     function toggleMute(track) {
         track.isMuted = !track.isMuted;
         if (track.gainNode) {
@@ -455,10 +623,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         updateMuteVisuals(track);
     }
-    /**
-     * @function updatePlayPauseButton
-     * @description 更新播放/暂停按钮的图标和颜色
-     */
     function updatePlayPauseButton() {
         loadingIcon.classList.add('hidden');
         playIcon.classList.toggle('hidden', isPlaying);
@@ -471,39 +635,19 @@ document.addEventListener('DOMContentLoaded', () => {
             playPauseBtn.classList.replace('hover:bg-amber-600', 'hover:bg-blue-600');
         }
     }
-    /**
-     * @function updateMuteVisuals
-     * @description 更新静音按钮的图标和滑块的透明度
-     */
     function updateMuteVisuals(track) {
         track.ui.muteBtn.innerHTML = track.isMuted ? ICONS.muted : ICONS.unmuted;
         track.ui.volumeSlider.style.opacity = track.isMuted ? '0.5' : '1';
         if (!track.gainNode) track.ui.muteBtn.innerHTML = (track.defaultVolume > 0) ? ICONS.unmuted : ICONS.muted;
     }
-    /**
-     * @function updateVolumeSliderFill
-     * @description 更新音量滑块的背景填充比例
-     */
     function updateVolumeSliderFill(slider, value) { slider.style.backgroundSize = `${value}% 100%`; }
-    /**
-     * @function formatTime
-     * @description 将秒数格式化为 mm:ss 格式
-     */
     function formatTime(seconds) {
         const secs = Math.floor(seconds);
         const minutes = Math.floor(secs / 60);
         const remainingSeconds = secs % 60;
         return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
     }
-    /**
-     * @function showTooltip
-     * @description 显示音量提示框
-     */
     function showTooltip(ui) { ui.tooltip.style.opacity = '1'; updateTooltip(ui); }
-    /**
-     * @function updateTooltip
-     * @description 更新音量提示框的内容和位置
-     */
     function updateTooltip(ui) {
         const slider = ui.volumeSlider;
         const value = slider.value;
@@ -515,15 +659,10 @@ document.addEventListener('DOMContentLoaded', () => {
         thumbPosition = Math.max(ui.tooltip.offsetWidth / 2, Math.min(thumbPosition, trackWidth - ui.tooltip.offsetWidth / 2));
         ui.tooltip.style.left = `${thumbPosition}px`;
     }
-    /**
-     * @function hideTooltip
-     * @description 隐藏音量提示框
-     */
     function hideTooltip(ui) { ui.tooltip.style.opacity = '0'; }
 
     // --- 初始化执行 ---
     function initialize() {
-        // 初始只显示歌曲选择
         qualitySelectionContainer.classList.add('hidden');
         mainPlayerControls.classList.add('hidden');
         mixerTracksContainer.innerHTML = '';
