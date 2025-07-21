@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const lqSizeSpan = document.getElementById('lq-size');
     const songSelect = document.getElementById('song-select');
     const songSelectionContainer = document.getElementById('song-selection-container');
+    const progressTooltip = document.getElementById('progress-tooltip'); // 新增
 
     // --- 全局状态 ---
     let audioContext;
@@ -99,8 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             tracks = [];
-            hqSizeSpan.textContent = '（计算中…）';
-            lqSizeSpan.textContent = '（计算中…）';
+            hqSizeSpan.textContent = '(计算中…)';
+            lqSizeSpan.textContent = '(计算中…)';
             [storedHqBytes, storedLqBytes] = [0, 0];
             (async () => {
                 [storedHqBytes, storedLqBytes] = await Promise.all([
@@ -122,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
         mixerTracksContainer.classList.add('opacity-50', 'pointer-events-none');
         tracksData.forEach((trackData) => {
             const trackElement = document.createElement('div');
-            trackElement.className = 'py-4';
+            trackElement.className = 'py-3';
 
             // --- 上方部分: 轨道名, 音量滑块, 独奏/静音按钮 ---
             const topRow = document.createElement('div');
@@ -219,7 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
         playPauseBtn.disabled = true;
         playIcon.classList.add('hidden');
         loadingIcon.classList.remove('hidden');
-        loadingText.innerHTML = `正在加载音频资源（<span id="load-progress-percent">0</span>%）`;
+        loadingText.innerHTML = `正在加载音频资源(<span id="load-progress-percent">0</span>%)`;
 
         try {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -241,6 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             updateAllTrackVolumes();
             initializeResizeObserver();
+            updateMasterProgressFill(); // 新增：初始化进度条填充
 
             play();
 
@@ -414,6 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     masterProgress.value = seekTime;
                     currentTimeDisplay.textContent = formatTime(seekTime);
                     updateWaveformProgressLine(seekTime);
+                    updateMasterProgressFill(); // 新增：更新填充
                 }
             });
             container.dataset.hasClickListener = 'true';
@@ -461,13 +464,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (totalBytes > 0) {
                 const totalMB = (totalBytes / (1024 * 1024)).toFixed(1);
-                spanElement.textContent = `（${totalMB}MB）`;
+                spanElement.textContent = `(${totalMB}MB)`;
             } else {
-                spanElement.textContent = `（未知大小）`;
+                spanElement.textContent = `(未知大小)`;
             }
         } catch (error) {
             console.warn(`无法获取 ${extension} 文件总大小：`, error);
-            spanElement.textContent = `（获取失败）`;
+            spanElement.textContent = `(获取失败)`;
         }
         return totalBytes;
     }
@@ -555,6 +558,7 @@ document.addEventListener('DOMContentLoaded', () => {
             startOffset = seekTime;
             currentTimeDisplay.textContent = formatTime(seekTime);
             updateWaveformProgressLine(seekTime);
+            updateMasterProgressFill(); // 新增：更新填充
         }
     }
 
@@ -564,6 +568,7 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function updateLevelMeters() {
         const MIN_DB = -60.0;
+
         tracks.forEach(track => {
             const meterBar = track.ui.meterBar;
             if (!track.analyserNode || !meterBar) return;
@@ -574,14 +579,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (absSample > peakAmplitude) peakAmplitude = absSample;
             }
             if (peakAmplitude === 0) {
-                meterBar.style.height = '0%'; // 修改: 从 width 改为 height
+                meterBar.style.height = '0%';
                 return;
             }
             const peakDb = 20 * Math.log10(peakAmplitude);
             let levelPercent = peakDb < MIN_DB ? 0 : ((((peakDb - MIN_DB) / (0 - MIN_DB)) ** 2) * 100) | 0;
-            meterBar.style.height = `${Math.min(100, Math.max(0, levelPercent))}%`; // 修改: 从 width 改为 height
+            const finalPercent = Math.min(100, Math.max(0, levelPercent));
+            meterBar.style.height = `${finalPercent}%`;
+            meterBar.style.backgroundColor = `rgb(0, 201, 81)`;
         });
     }
+
 
     /**
      * @function updateProgress
@@ -602,11 +610,13 @@ document.addEventListener('DOMContentLoaded', () => {
             masterProgress.value = minDuration;
             currentTimeDisplay.textContent = formatTime(minDuration);
             updateWaveformProgressLine(minDuration);
+            updateMasterProgressFill(); // 新增：更新填充
         } else {
             if (!isSeeking) {
                 masterProgress.value = newCurrentTime;
                 currentTimeDisplay.textContent = formatTime(newCurrentTime);
                 updateWaveformProgressLine(newCurrentTime);
+                updateMasterProgressFill(); // 新增：更新填充
             }
             animationFrameId = requestAnimationFrame(updateProgress);
         }
@@ -686,14 +696,41 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 其他 UI 事件函数 ---
     function bindUIEvents() {
         playPauseBtn.addEventListener('click', togglePlayPause);
-        masterProgress.addEventListener('input', () => { isSeeking = true; });
-        masterProgress.addEventListener('change', () => { isSeeking = false; seek(); });
+
+        // --- 主进度条事件 ---
+        masterProgress.addEventListener('input', () => {
+            isSeeking = true;
+            updateMasterProgressFill();
+            showProgressTooltip();
+        });
+        masterProgress.addEventListener('change', () => {
+            isSeeking = false;
+            seek();
+            hideProgressTooltip();
+        });
+        masterProgress.addEventListener('mousedown', () => {
+            isSeeking = true;
+            showProgressTooltip();
+        });
+        masterProgress.addEventListener('mouseup', () => {
+            isSeeking = false;
+            hideProgressTooltip();
+        });
+        masterProgress.addEventListener('touchstart', () => {
+            isSeeking = true;
+            showProgressTooltip();
+        }, { passive: true });
+        masterProgress.addEventListener('touchend', () => {
+            isSeeking = false;
+            hideProgressTooltip();
+        });
+
+
         tracks.forEach((track) => {
             track.ui.volumeSlider.addEventListener('input', e => handleVolumeChange(e, track));
             track.ui.volumeSlider.addEventListener('mousedown', () => showTooltip(track.ui));
             track.ui.volumeSlider.addEventListener('touchstart', () => showTooltip(track.ui), { passive: true });
             track.ui.volumeSlider.addEventListener('input', () => updateTooltip(track.ui));
-
             track.ui.muteBtn.addEventListener('click', () => handleMuteClick(track));
             track.ui.soloBtn.addEventListener('click', () => handleSoloClick(track));
         });
@@ -724,6 +761,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateVolumeSliderFill(slider, value) { slider.style.backgroundSize = `${value}% 100%`; }
+
+    // --- 新增/修改：主进度条相关函数 ---
+    function updateMasterProgressFill() {
+        const percent = (masterProgress.value / masterProgress.max) * 100;
+        masterProgress.style.backgroundSize = `${percent}% 100%`;
+    }
+
+    function showProgressTooltip() {
+        progressTooltip.style.opacity = '1';
+        updateProgressTooltip();
+    }
+
+    function updateProgressTooltip() {
+        if (!progressTooltip) return;
+        const val = masterProgress.value;
+        progressTooltip.textContent = formatTime(val);
+
+        const trackWidth = masterProgress.offsetWidth;
+        const thumbWidth = 16; // 与 CSS 中 #master-progress::-webkit-slider-thumb 的 width 一致
+        const percent = val / masterProgress.max;
+        let thumbPosition = percent * trackWidth;
+
+        // 微调以使提示框居中于滑块按钮
+        thumbPosition = percent * (trackWidth - thumbWidth) + (thumbWidth / 2);
+
+        // 确保提示框不会超出父容器边界
+        const tooltipWidth = progressTooltip.offsetWidth;
+        const left = Math.max(tooltipWidth / 2, Math.min(thumbPosition, trackWidth - tooltipWidth / 2));
+        progressTooltip.style.left = `${left - tooltipWidth / 2}px`;
+    }
+
+    function hideProgressTooltip() {
+        progressTooltip.style.opacity = '0';
+    }
+
 
     function formatTime(seconds) {
         const secs = Math.floor(seconds);

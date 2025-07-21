@@ -15,32 +15,31 @@
 
         <div class="px-6 pt-6 pb-0">
             <div class="text-center">
-                <h1 class="text-xl font-bold text-gray-800 mb-1">多轨音频播放器演示</h1>
+                <h1 class="text-xl font-bold text-gray-800 mb-0">多轨音频播放器演示</h1>
             </div>
         </div>
 
-        <div class="px-6 py-6 min-h-[110px]">
-            <div id="song-selection-container" class="text-center mb-4">
-                <select id="song-select" class="px-3 py-2 border rounded-lg text-sm w-full max-w-xs mx-auto">
+        <div class="px-6 py-0 flex flex-col justify-center">
+            <div id="song-selection-container"
+                class="h-full flex flex-col items-center py-0 justify-center text-center">
+                <select id="song-select" class="w-full max-w-xs mx-auto my-6">
                     <option value="" selected disabled>请选择歌曲</option>
                 </select>
-                <div id="selected-song-name" class="hidden text-lg font-semibold text-gray-700"></div>
+                <div id="selected-song-name" class="hidden text-base font-semibold text-gray-700 mt-1"></div>
             </div>
             <div id="quality-selection-container" class="text-center hidden">
-                <p class="text-sm text-gray-600 mb-4">请选择音质版本</p>
-                <div class="flex justify-center space-x-4">
+                <p class="text-sm text-gray-600 mt-2 mb-2">请选择音质版本</p>
+                <div class="flex justify-center space-x-2 mb-4">
                     <button id="load-hq-btn" disabled
-                        class="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-600 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-wait">
-                        高音质<span id="hq-size" class="text-xs font-normal"></span>
-                    </button>
+                        class="px-3 py-2 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-wait text-xs">
+                        高音质<span id="hq-size" class="text-xs font-normal ml-1"></span> </button>
                     <button id="load-lq-btn" disabled
-                        class="px-4 py-2 bg-yellow-500 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-600 transition-all duration-200 disabled:bg-yellow-400 disabled:cursor-wait">
-                        低音质<span id="lq-size" class="text-xs font-normal"></span>
-                    </button>
+                        class="px-3 py-2 bg-green-500 text-white rounded-lg shadow-md hover:bg-green-600 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-wait text-xs">
+                        低音质<span id="lq-size" class="text-xs font-normal ml-1"></span> </button>
                 </div>
             </div>
 
-            <div class="space-y-2 hidden" id="main-player-controls">
+            <div class="space-y-2 hidden mt-2 mb-4" id="main-player-controls">
                 <div class="flex items-center space-x-4">
                     <button
                         class="flex-shrink-0 w-12 h-12 bg-blue-500 text-white font-bold rounded-full transition-all duration-200 flex items-center justify-center text-lg shadow disabled:bg-gray-400 disabled:cursor-not-allowed"
@@ -77,7 +76,10 @@
                             </div>
                         </div>
 
-                        <div class="hidden" id="player-progress-container">
+                        <div class="hidden relative" id="player-progress-container">
+                            <div id="progress-tooltip"
+                                class="absolute top-[-30px] bg-gray-800 text-white text-xs rounded py-1 px-2 pointer-events-none opacity-0 transition-opacity duration-200">
+                                00:00</div>
                             <input class="w-full" id="master-progress" max="100" min="0" type="range" value="0">
                             <div class="flex justify-between items-center text-xs text-gray-500 px-1 mt-1">
                                 <span id="current-time">00:00</span>

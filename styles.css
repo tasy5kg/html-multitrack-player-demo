@@ -15,49 +15,79 @@ body {
     -webkit-tap-highlight-color: transparent;
 }
 
-/* --- 自定义范围输入框 (input[type="range"]) 的样式 --- */
-
-/* 重置范围输入框的默认外观 */
-input[type="range"] {
+/* --- 新增：美化歌曲选择下拉菜单 --- */
+#song-select {
     -webkit-appearance: none;
-    /* 针对 Webkit 浏览器 */
     appearance: none;
-    /* 标准属性 */
+    background-color: #f9fafb;
+    /* 浅灰色背景 */
+    border: 1px solid #d1d5db;
+    /* 灰色边框 */
+    border-radius: 0.5rem;
+    /* 圆角 */
+    padding: 0.75rem 1rem;
+    /* 增加内边距 */
+    font-size: 1rem;
+    /* 稍大字体 */
+    font-weight: 500;
+    /* 中等字重 */
+    color: #1f2937;
+    /* 深灰色文字 */
+    cursor: pointer;
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    /* 自定义下拉箭头 */
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 3rem;
+    /* 为箭头留出空间 */
+}
+
+#song-select:hover {
+    border-color: #9ca3af;
+    /* 悬停时边框颜色加深 */
+}
+
+#song-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    /* 聚焦时蓝色边框 */
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+    /* 聚焦时蓝色阴影 */
+}
+
+
+/* --- 音量滑块 (input[type="range"]) 的通用样式 --- */
+input[type="range"].volume-slider {
+    -webkit-appearance: none;
+    appearance: none;
     width: 100%;
     height: 8px;
     background: var(--track-bg);
     border-radius: 9999px;
-    /* 圆角 */
     outline: none;
-    /* 移除焦点时的轮廓 */
     cursor: pointer;
-    /* 设置鼠标指针为手形 */
+    transition: background-color 0.05s ease-out;
 }
 
-/* 自定义 Webkit 浏览器（Chrome, Safari）中滑块按钮的样式 */
-input[type="range"]::-webkit-slider-thumb {
+input[type="range"].volume-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
-    /* 移除默认外观 */
     appearance: none;
     width: 20px;
     height: 20px;
     background: var(--thumb-bg);
     border-radius: 50%;
-    /* 圆形 */
     border: 2px solid white;
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
-    /* 添加阴影效果 */
-    transition: background-color 0.2s ease-in-out;
-    /* 背景色变化的过渡效果 */
+    transition: background-color 0.05s ease-out, transform 0.05s ease-out;
 }
 
-/* Webkit 浏览器中滑块按钮悬停时的样式 */
-input[type="range"]::-webkit-slider-thumb:hover {
+input[type="range"].volume-slider::-webkit-slider-thumb:hover {
     background: var(--thumb-hover-bg);
 }
 
-/* 自定义 Firefox 浏览器中滑块按钮的样式 */
-input[type="range"]::-moz-range-thumb {
+input[type="range"].volume-slider::-moz-range-thumb {
     width: 20px;
     height: 20px;
     background: var(--thumb-bg);
@@ -65,23 +95,78 @@ input[type="range"]::-moz-range-thumb {
     border: 2px solid white;
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
     cursor: pointer;
-    transition: background-color 0.2s ease-in-out;
+    transition: background-color 0.05s ease-out, transform 0.05s ease-out;
 }
 
-/* Firefox 浏览器中滑块按钮悬停时的样式 */
-input[type="range"]::-moz-range-thumb:hover {
+input[type="range"].volume-slider::-moz-range-thumb:hover {
     background: var(--thumb-hover-bg);
 }
 
-/* --- 音量滑块的填充效果 --- */
-.volume-slider {
+/* --- 新增：播放进度滑块 (#master-progress) 的独特样式 --- */
+#master-progress {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    /* 更纤细的轨道 */
+    background: #d1d5db;
+    /* 不同的轨道背景色 */
+    border-radius: 9999px;
+    outline: none;
+    cursor: pointer;
     position: relative;
-    /* 使用线性渐变来模拟滑块的填充效果 */
+    transition: background-color 0.05s ease-out;
+}
+
+#master-progress::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    /* 稍小的拖动按钮 */
+    height: 16px;
+    background: #ffffff;
+    /* 白色按钮 */
+    border-radius: 50%;
+    border: 2px solid #3b82f6;
+    /* 蓝色边框 */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.05s ease-out, transform 0.05s ease-out;
+}
+
+#master-progress:hover::-webkit-slider-thumb {
+    transform: scale(1.1);
+    /* 悬停时放大 */
+}
+
+#master-progress::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: #ffffff;
+    border-radius: 50%;
+    border: 2px solid #3b82f6;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    transition: background-color 0.05s ease-out, transform 0.05s ease-out;
+}
+
+#master-progress:hover::-moz-range-thumb {
+    transform: scale(1.1);
+}
+
+/* --- 滑块的填充效果 --- */
+.volume-slider,
+#master-progress {
     background-image: linear-gradient(var(--track-fill-bg), var(--track-fill-bg));
     background-repeat: no-repeat;
-    /* 初始填充75% */
+    background-size: 0% 100%;
+    /* 初始填充0% */
+}
+
+/* 单独为音量滑块设置初始填充 */
+.volume-slider {
     background-size: 75% 100%;
 }
+
 
 /* --- 音量提示框样式 --- */
 .volume-tooltip {
@@ -91,7 +176,7 @@ input[type="range"]::-moz-range-thumb:hover {
 
 /* --- 波形图样式 --- */
 .waveform-container {
-    margin-top: 0px; /* 从 12px 改为 0px */
+    margin-top: 0px;
     height: 60px;
     background-color: #f3f4f6;
     border-radius: 8px;
@@ -118,10 +203,10 @@ input[type="range"]::-moz-range-thumb:hover {
 }
 
 .waveform-progress-line {
-    stroke: #EF4444;
+    stroke: #f07272;
     /* 红色 */
-    stroke-width: 2;
-    transition: transform 0.025s ease-in-out;
+    stroke-width: 8;
+    transition: transform 0.05s ease-out;
 }
 
 /* --- 独奏和静音按钮样式 --- */
@@ -178,7 +263,8 @@ input[type="range"]::-moz-range-thumb:hover {
 
 /* --- 新增：垂直电平指示器样式 --- */
 .vertical-meter-wrapper {
-    width: 20px;
+    width: 32px;
+    /* 加粗 */
     height: 60px;
     /* 与波形图容器高度一致 */
     background-color: #e5e7eb;
@@ -195,8 +281,7 @@ input[type="range"]::-moz-range-thumb:hover {
     width: 100%;
     height: 0%;
     /* 初始高度为 0 */
-    background-color: #34d399;
-    /* 电平条颜色 (浅绿色) */
-    transition: height 0.1s ease-out;
-    /* 高度变化的过渡效果 */
+    /* background-color 将由 JS 控制 */
+    transition: height 0.1s ease-out, background-color 0.1s ease-out;
+    /* 增加背景颜色过渡 */
 }
