@@ -110,14 +110,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedIndex = songSelect.value;
         if (state.songsList[selectedIndex]) {
             state.currentSong = state.songsList[selectedIndex];
-            
             // Update UI
             songSelect.classList.add('hidden');
             selectedSongName.textContent = state.currentSong.name;
             selectedSongName.classList.remove('hidden');
             qualitySelectionContainer.classList.remove('hidden');
             mainPlayerControls.classList.add('hidden');
-            
+
+            // 显示BPM和调式
+            const songInfoDiv = document.getElementById('song-info');
+            if (state.currentSong.bpm && state.currentSong.song_key) {
+                songInfoDiv.innerHTML = `BPM: ${state.currentSong.bpm}&nbsp;&nbsp;调式: ${state.currentSong.song_key}`;
+            } else if (state.currentSong.bpm) {
+                songInfoDiv.textContent = `BPM: ${state.currentSong.bpm}`;
+            } else if (state.currentSong.song_key) {
+                songInfoDiv.textContent = `调式: ${state.currentSong.song_key}`;
+            } else {
+                songInfoDiv.textContent = '';
+            }
+            songInfoDiv.classList.remove('hidden');
+
             resetPlayerState();
             setupNewSong();
         }
