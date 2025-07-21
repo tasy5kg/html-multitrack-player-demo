@@ -83,11 +83,6 @@ input[type="range"]::-moz-range-thumb:hover {
     background-size: 75% 100%;
 }
 
-/* 节拍器滑块默认没有填充 */
-.volume-slider.metronome {
-    background-size: 0% 100%;
-}
-
 /* --- 音量提示框样式 --- */
 .volume-tooltip {
     /* 将提示框定位在滑块按钮上方 */
@@ -127,4 +122,45 @@ input[type="range"]::-moz-range-thumb:hover {
     /* 红色 */
     stroke-width: 2;
     transition: transform 0.025s ease-in-out;
+}
+
+/* --- 独奏和静音按钮样式 --- */
+.control-button {
+    width: auto; /* 修改 */
+    padding-left: 8px; /* 修改 */
+    padding-right: 8px; /* 修改 */
+    height: 28px;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 13px; /* 微调字体大小以适应 */
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #d1d5db; /* 边框 */
+}
+
+/* 静音按钮样式 */
+.mute-button {
+    background-color: #f3f4f6; /* 默认背景 */
+    color: #4b5563; /* 默认文字颜色 */
+}
+
+.mute-button.active {
+    background-color: #3b82f6; /* 激活时蓝色 */
+    color: white;
+    border-color: #2563eb;
+}
+
+/* 独奏按钮样式 */
+.solo-button {
+    background-color: #f3f4f6; /* 默认背景 */
+    color: #4b5563; /* 默认文字颜色 */
+}
+
+.solo-button.active {
+    background-color: #f59e0b; /* 激活时黄色 */
+    color: white;
+    border-color: #d97706;
 }

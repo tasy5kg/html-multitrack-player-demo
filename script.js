@@ -57,10 +57,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentSong = null;
     let tracksData = [];
     let resizeObserver = null;
+    let isAnyTrackSoloed = false; // 独奏状态标志
 
-
-    // --- SVG 图标 ---
-    // 已移除静音图标
 
     // --- 歌曲选择相关 ---
     async function loadSongsList() {
@@ -86,13 +84,14 @@ document.addEventListener('DOMContentLoaded', () => {
             tracksData = currentSong.tracksData.map(track => ({
                 name: track.name,
                 baseName: track.file,
-                defaultVolume: track.name === '节拍器' ? 0 : 75,
+                defaultVolume: 75,
                 folder: currentSong.folder
             }));
             qualitySelectionContainer.classList.remove('hidden');
             mainPlayerControls.classList.add('hidden');
             mixerTracksContainer.innerHTML = '';
             isInitialized = false;
+            isAnyTrackSoloed = false;
 
             if (resizeObserver) {
                 resizeObserver.disconnect();
@@ -125,11 +124,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const trackElement = document.createElement('div');
             trackElement.className = 'py-4';
             const labelContainer = document.createElement('div');
-            labelContainer.className = 'flex items-center';
+            labelContainer.className = 'flex items-center justify-between';
             const label = document.createElement('label');
             label.textContent = trackData.name;
             label.className = 'text-sm font-bold text-gray-700';
+
+            const soloMuteContainer = document.createElement('div');
+            soloMuteContainer.className = 'flex items-center space-x-2';
+
+            const muteBtn = document.createElement('button');
+            muteBtn.textContent = '静音'; // 修改
+            muteBtn.className = 'control-button mute-button';
+
+            const soloBtn = document.createElement('button');
+            soloBtn.textContent = '独奏'; // 修改
+            soloBtn.className = 'control-button solo-button';
+
+            soloMuteContainer.appendChild(muteBtn);
+            soloMuteContainer.appendChild(soloBtn);
+
             labelContainer.appendChild(label);
+            labelContainer.appendChild(soloMuteContainer);
+
             const controlsContainer = document.createElement('div');
             controlsContainer.className = 'flex items-center space-x-2 mt-2';
             const sliderWrapper = document.createElement('div');
@@ -139,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
             volumeSlider.min = 0;
             volumeSlider.max = 100;
             volumeSlider.value = trackData.defaultVolume;
-            volumeSlider.className = `volume-slider w-full ${trackData.name === '节拍器' ? 'metronome' : ''}`;
+            volumeSlider.className = 'volume-slider w-full';
             const volumeTooltip = document.createElement('div');
             volumeTooltip.className = 'volume-tooltip absolute top-0 bg-gray-800 text-white text-xs rounded py-1 px-2 pointer-events-none opacity-0 transition-opacity duration-200';
             volumeTooltip.textContent = `${trackData.defaultVolume}%`;
@@ -165,7 +181,26 @@ document.addEventListener('DOMContentLoaded', () => {
             trackElement.appendChild(waveformContainer);
             mixerTracksContainer.appendChild(trackElement);
 
-            tracks.push({ ...trackData, lastVolume: trackData.defaultVolume / 100, ui: { volumeSlider, tooltip: volumeTooltip, meterBar, waveformContainer } });
+            const isMetronome = trackData.name === '节拍器';
+
+            tracks.push({
+                ...trackData,
+                lastVolume: trackData.defaultVolume / 100,
+                isMuted: isMetronome,
+                isSoloed: false,
+                ui: {
+                    volumeSlider,
+                    tooltip: volumeTooltip,
+                    meterBar,
+                    waveformContainer,
+                    muteBtn,
+                    soloBtn
+                }
+            });
+
+            if (isMetronome) {
+                muteBtn.classList.add('active');
+            }
         });
     }
 
@@ -184,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             tracks.forEach(track => {
                 const gainNode = audioContext.createGain();
-                gainNode.gain.value = track.lastVolume;
+                gainNode.gain.value = 0;
                 const analyserNode = audioContext.createAnalyser();
                 analyserNode.fftSize = 2048;
                 gainNode.connect(analyserNode);
@@ -198,6 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
             mixerTracksContainer.classList.remove('opacity-50', 'pointer-events-none');
             playPauseBtn.disabled = false;
 
+            updateAllTrackVolumes();
             initializeResizeObserver();
 
             play();
@@ -466,6 +502,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         isPlaying = true;
         startTime = audioContext.currentTime;
+        updateAllTrackVolumes();
         updatePlayPauseButton();
         animationFrameId = requestAnimationFrame(updateProgress);
     }
@@ -550,7 +587,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         };
 
-        // --- 最终修复：结合音频延迟进行校正 ---
         const latency = audioContext.outputLatency || 0;
         const newCurrentTime = startOffset + (audioContext.currentTime - startTime) - latency;
 
@@ -593,7 +629,55 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- 其他 UI 事件函数 (无需修改) ---
+    // --- Mute 和 Solo 逻辑 ---
+    /**
+     * @function handleMuteClick
+     * @description 处理静音按钮点击事件
+     */
+    function handleMuteClick(clickedTrack) {
+        clickedTrack.isMuted = !clickedTrack.isMuted;
+        clickedTrack.ui.muteBtn.classList.toggle('active', clickedTrack.isMuted);
+        updateAllTrackVolumes();
+    }
+
+    /**
+     * @function handleSoloClick
+     * @description 处理独奏按钮点击事件 (支持多轨独奏)
+     */
+    function handleSoloClick(clickedTrack) {
+        clickedTrack.isSoloed = !clickedTrack.isSoloed;
+        clickedTrack.ui.soloBtn.classList.toggle('active', clickedTrack.isSoloed);
+        isAnyTrackSoloed = tracks.some(track => track.isSoloed);
+        updateAllTrackVolumes();
+    }
+
+    /**
+     * @function updateAllTrackVolumes
+     * @description 根据所有轨道的 Mute 和 Solo 状态，集中更新实际音量
+     */
+    function updateAllTrackVolumes() {
+        if (!audioContext) return;
+
+        tracks.forEach(track => {
+            let finalVolume = 0;
+            if (isAnyTrackSoloed) {
+                // 如果有轨道被独奏
+                if (track.isSoloed && !track.isMuted) {
+                    finalVolume = track.lastVolume;
+                }
+            } else {
+                // 如果没有轨道被独奏
+                if (!track.isMuted) {
+                    finalVolume = track.lastVolume;
+                }
+            }
+            if (track.gainNode) {
+                track.gainNode.gain.setTargetAtTime(finalVolume, audioContext.currentTime, 0.01);
+            }
+        });
+    }
+
+    // --- 其他 UI 事件函数 ---
     function bindUIEvents() {
         playPauseBtn.addEventListener('click', togglePlayPause);
         masterProgress.addEventListener('input', () => { isSeeking = true; });
@@ -603,19 +687,23 @@ document.addEventListener('DOMContentLoaded', () => {
             track.ui.volumeSlider.addEventListener('mousedown', () => showTooltip(track.ui));
             track.ui.volumeSlider.addEventListener('touchstart', () => showTooltip(track.ui), { passive: true });
             track.ui.volumeSlider.addEventListener('input', () => updateTooltip(track.ui));
+
+            track.ui.muteBtn.addEventListener('click', () => handleMuteClick(track));
+            track.ui.soloBtn.addEventListener('click', () => handleSoloClick(track));
         });
         const hideAllTooltips = () => { tracks.forEach(track => hideTooltip(track.ui)); };
         document.addEventListener('mouseup', hideAllTooltips);
         document.addEventListener('touchend', hideAllTooltips);
     }
+
     function handleVolumeChange(e, track) {
         const value = parseFloat(e.target.value);
         const volume = value / 100;
-        if (track.gainNode) track.gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
         track.lastVolume = volume;
+        updateAllTrackVolumes();
         updateVolumeSliderFill(track.ui.volumeSlider, value);
     }
-    // 已移除 toggleMute 相关逻辑
+
     function updatePlayPauseButton() {
         loadingIcon.classList.add('hidden');
         playIcon.classList.toggle('hidden', isPlaying);
@@ -628,15 +716,18 @@ document.addEventListener('DOMContentLoaded', () => {
             playPauseBtn.classList.replace('hover:bg-amber-600', 'hover:bg-blue-600');
         }
     }
-    // 已移除 updateMuteVisuals 相关逻辑
+
     function updateVolumeSliderFill(slider, value) { slider.style.backgroundSize = `${value}% 100%`; }
+
     function formatTime(seconds) {
         const secs = Math.floor(seconds);
         const minutes = Math.floor(secs / 60);
         const remainingSeconds = secs % 60;
         return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
     }
+
     function showTooltip(ui) { ui.tooltip.style.opacity = '1'; updateTooltip(ui); }
+
     function updateTooltip(ui) {
         const slider = ui.volumeSlider;
         const value = slider.value;
@@ -648,6 +739,7 @@ document.addEventListener('DOMContentLoaded', () => {
         thumbPosition = Math.max(ui.tooltip.offsetWidth / 2, Math.min(thumbPosition, trackWidth - ui.tooltip.offsetWidth / 2));
         ui.tooltip.style.left = `${thumbPosition}px`;
     }
+
     function hideTooltip(ui) { ui.tooltip.style.opacity = '0'; }
 
     // --- 初始化执行 ---
