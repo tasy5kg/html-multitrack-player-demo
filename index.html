@@ -16,19 +16,17 @@
         <div class="px-6 pt-6 pb-0">
             <div class="text-center">
                 <h1 class="text-xl font-bold text-gray-800 mb-1">多轨音频播放器演示</h1>
-                <p class="text-sm text-gray-500 mt-1.5">《李佳薇 - 天后 (Live)》</p>
             </div>
         </div>
 
         <div class="px-6 py-6 min-h-[110px]">
             <div id="song-selection-container" class="text-center mb-4">
-                <label for="song-select" class="text-sm text-gray-600 mb-2 block">请选择歌曲</label>
                 <select id="song-select" class="px-3 py-2 border rounded-lg text-sm w-full max-w-xs mx-auto">
-                    <option value="" selected disabled>请选择</option>
+                    <option value="" selected disabled>请选择歌曲</option>
                 </select>
             </div>
             <div id="quality-selection-container" class="text-center hidden">
-                <p class="text-sm text-gray-600 mb-4">请选择要加载的音频资源版本</p>
+                <p class="text-sm text-gray-600 mb-4">请选择音质版本</p>
                 <div class="flex justify-center space-x-4">
                     <button id="load-hq-btn" disabled
                         class="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-600 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-wait">
@@ -101,7 +99,7 @@
 
         <div class="px-6 py-6">
             <div class="text-center text-xs text-gray-400">
-                <p>本页面所有代码由 AI 生成</p>
+                <p>本页面代码基于 AI 生成</p>
                 <p class="mt-1">音乐轨道由 AI 提取，存在一定瑕疵</p>
             </div>
         </div>

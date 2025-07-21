@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const res = await fetch('songs.json');
             songsList = await res.json();
-            songSelect.innerHTML = '<option value="" selected disabled>请选择</option>';
+            songSelect.innerHTML = '<option value="" selected disabled>请选择歌曲</option>';
             songsList.forEach((song, idx) => {
                 const opt = document.createElement('option');
                 opt.value = idx;
@@ -98,6 +98,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function setupUI() {
         mixerTracksContainer.innerHTML = '';
         tracks = [];
+        // 音轨区域初始禁用（灰色且不可操作）
+        mixerTracksContainer.classList.add('opacity-50', 'pointer-events-none');
         tracksData.forEach((trackData) => {
             const trackElement = document.createElement('div');
             trackElement.className = 'py-4';
@@ -108,6 +110,8 @@ document.addEventListener('DOMContentLoaded', () => {
             label.className = 'text-sm font-bold text-gray-700';
             const muteBtn = document.createElement('button');
             muteBtn.className = 'text-gray-400 hover:text-gray-600 transition-colors';
+            // 设置初始静音图标
+            muteBtn.innerHTML = (trackData.defaultVolume === 0) ? ICONS.muted : ICONS.unmuted;
             labelAndMuteContainer.appendChild(label);
             labelAndMuteContainer.appendChild(muteBtn);
             const controlsContainer = document.createElement('div');
