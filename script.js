@@ -1,3 +1,20 @@
+// 选择歌曲后隐藏下拉菜单并显示歌曲名
+document.addEventListener('DOMContentLoaded', function () {
+    const songSelect = document.getElementById('song-select');
+    const selectedSongName = document.getElementById('selected-song-name');
+    if (songSelect && selectedSongName) {
+        songSelect.addEventListener('change', function () {
+            const selectedOption = songSelect.options[songSelect.selectedIndex];
+            if (selectedOption && selectedOption.value) {
+                // 隐藏下拉菜单
+                songSelect.classList.add('hidden');
+                // 显示歌曲名
+                selectedSongName.textContent = selectedOption.textContent;
+                selectedSongName.classList.remove('hidden');
+            }
+        });
+    }
+});
 // 等待 DOM 内容完全加载后执行脚本
 document.addEventListener('DOMContentLoaded', () => {
     // --- DOM 元素 ---
