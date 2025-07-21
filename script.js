@@ -189,6 +189,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
             const isMetronome = trackData.name === '节拍器';
+            
+            // 初始化音量滑块的填充
+            updateVolumeSliderFill(volumeSlider, trackData.defaultVolume);
 
             tracks.push({
                 ...trackData,
@@ -760,7 +763,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function updateVolumeSliderFill(slider, value) { slider.style.backgroundSize = `${value}% 100%`; }
+    function updateVolumeSliderFill(slider, value) { 
+        // 更新CSS变量以驱动填充效果
+        slider.style.setProperty('--value-percent', `${value}%`);
+        // 计算三角形顶点
+        // 三角形底边：左下(0,100%)，右下(100%,100%)，右上(100%,0%)
+        // 填充三角形：左下(0,100%)，顶点(x,y)，右下(x,100%)
+        // x = value%，y = 100% - value%
+        const percent = Math.max(0, Math.min(100, value));
+        slider.style.setProperty('--triangle-x', `${percent}%`);
+        slider.style.setProperty('--triangle-y', `${100 - percent}%`);
+    }
 
     // --- 新增/修改：主进度条相关函数 ---
     function updateMasterProgressFill() {
