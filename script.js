@@ -23,10 +23,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const totalDurationDisplay = document.getElementById('total-duration');
     const progressTooltip = document.getElementById('progress-tooltip');
     const mixerTracksContainer = document.getElementById('mixer-tracks');
+    const masterMeterBar = document.getElementById('master-meter-bar');
 
     // --- State Management ---
     const state = {
         audioContext: null,
+        masterGainNode: null,
+        masterAnalyserNode: null,
+        masterTimeDomainData: null,
         tracks: [],
         songsList: [],
         currentSong: null,
@@ -132,6 +136,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         Object.assign(state, {
             audioContext: null,
+            masterGainNode: null,
+            masterAnalyserNode: null,
+            masterTimeDomainData: null,
             tracks: [],
             isInitialized: false,
             isPlaying: false,
@@ -209,13 +216,24 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
             
+            // Create and connect master nodes
+            state.masterGainNode = state.audioContext.createGain();
+            state.masterAnalyserNode = state.audioContext.createAnalyser();
+            state.masterAnalyserNode.fftSize = 2048;
+            state.masterTimeDomainData = new Float32Array(state.masterAnalyserNode.fftSize);
+            state.masterGainNode.connect(state.masterAnalyserNode);
+            state.masterAnalyserNode.connect(state.audioContext.destination);
+
             // Create audio nodes for each track
             state.tracks.forEach(track => {
                 const gainNode = state.audioContext.createGain();
                 gainNode.gain.value = track.isMuted ? 0 : track.lastVolume;
                 const analyserNode = state.audioContext.createAnalyser();
                 analyserNode.fftSize = 2048;
-                gainNode.connect(analyserNode).connect(state.audioContext.destination);
+                
+                // Connect track: gain -> analyser -> masterGain
+                gainNode.connect(analyserNode);
+                analyserNode.connect(state.masterGainNode);
                 
                 track.gainNode = gainNode;
                 track.analyserNode = analyserNode;
@@ -609,35 +627,52 @@ document.addEventListener('DOMContentLoaded', () => {
             state.animationFrameId = requestAnimationFrame(updateProgress);
         }
         updateLevelMeters();
+        updateMasterLevelMeter();
     }
     
     /**
      * Updates the visual level meters for each track.
      */
     function updateLevelMeters() {
-        const MIN_DB = -60.0;
         state.tracks.forEach(track => {
-            const { ui, analyserNode, timeDomainData } = track;
-            if (!analyserNode || !ui.meterBar) return;
-            
-            analyserNode.getFloatTimeDomainData(timeDomainData);
-            let peakAmplitude = 0.0;
-            for (const sample of timeDomainData) {
-                const absSample = Math.abs(sample);
-                if (absSample > peakAmplitude) peakAmplitude = absSample;
-            }
-            
-            if (peakAmplitude === 0) {
-                ui.meterBar.style.height = '0%';
-                return;
-            }
-            
-            const peakDb = 20 * Math.log10(peakAmplitude);
-            const levelPercent = peakDb < MIN_DB ? 0 : Math.min(100, Math.max(0, ((((peakDb - MIN_DB) / -MIN_DB) ** 2) * 100) | 0));
-            
-            ui.meterBar.style.height = `${levelPercent}%`;
-            ui.meterBar.style.backgroundColor = `rgb(0, 201, 81)`;
+            if (!track.analyserNode || !track.ui.meterBar) return;
+            updateSingleMeter(track.analyserNode, track.timeDomainData, track.ui.meterBar);
         });
+    }
+
+    /**
+     * Updates the visual level meter for the master output.
+     */
+    function updateMasterLevelMeter() {
+        if (!state.masterAnalyserNode || !masterMeterBar) return;
+        updateSingleMeter(state.masterAnalyserNode, state.masterTimeDomainData, masterMeterBar);
+    }
+    
+    /**
+     * Generic function to update a single level meter UI.
+     * @param {AnalyserNode} analyserNode 
+     * @param {Float32Array} timeDomainData 
+     * @param {HTMLElement} meterBar 
+     */
+    function updateSingleMeter(analyserNode, timeDomainData, meterBar) {
+        const MIN_DB = -60.0;
+        analyserNode.getFloatTimeDomainData(timeDomainData);
+        let peakAmplitude = 0.0;
+        for (const sample of timeDomainData) {
+            const absSample = Math.abs(sample);
+            if (absSample > peakAmplitude) peakAmplitude = absSample;
+        }
+        
+        if (peakAmplitude === 0) {
+            meterBar.style.height = '0%';
+            return;
+        }
+        
+        const peakDb = 20 * Math.log10(peakAmplitude);
+        const levelPercent = peakDb < MIN_DB ? 0 : Math.min(100, Math.max(0, ((((peakDb - MIN_DB) / -MIN_DB) ** 2) * 100) | 0));
+        
+        meterBar.style.height = `${levelPercent}%`;
+        meterBar.style.backgroundColor = `rgb(0, 166, 62)`;
     }
     
     // --- UI Update Functions ---

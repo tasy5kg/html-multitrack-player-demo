@@ -5,10 +5,12 @@
  */
 
 :root {
-    --track-bg: #e5e7eb;
-    --track-fill-bg: #60a5fa;
-    --thumb-bg: #3b82f6;
-    --thumb-hover-bg: #2563eb;
+    --progress-track-bg: #e5e7eb;
+    --progress-track-fill-bg: #4182ea;
+    --volume-track-bg: #e6ebe5;
+    --volume-track-fill-bg: #75dd7a;
+    --thumb-bg: #67bf6d;
+    --thumb-hover-bg: #84d77e;
     --mute-button-bg: #8b5cf6;
     --mute-button-border: #7c3aed;
 }
@@ -76,7 +78,7 @@ input[type="range"].volume-slider::before {
     transform: translateY(-50%);
     width: 100%;
     height: 10px;
-    background: var(--track-bg);
+    background: var(--volume-track-bg);
     clip-path: polygon(0% 100%, 100% 0%, 100% 100%);
     z-index: 1;
 }
@@ -89,7 +91,7 @@ input[type="range"].volume-slider::after {
     transform: translateY(-50%);
     width: 100%;
     height: 10px;
-    background: linear-gradient(to right, var(--track-fill-bg) 0%, var(--track-fill-bg) var(--value-percent, 75%), transparent var(--value-percent, 75%));
+    background: linear-gradient(to right, var(--volume-track-fill-bg) 0%, var(--volume-track-fill-bg) var(--value-percent, 75%), transparent var(--value-percent, 75%));
     clip-path: polygon(0% 100%, var(--triangle-x, 75%) var(--triangle-y, 25%), var(--triangle-x, 75%) 100%);
     z-index: 2;
 }
@@ -133,7 +135,7 @@ input[type="range"].volume-slider:active::-webkit-slider-thumb {
     border-radius: 9999px;
     outline: none;
     cursor: pointer;
-    background-image: linear-gradient(var(--track-fill-bg), var(--track-fill-bg));
+    background-image: linear-gradient(var(--progress-track-fill-bg), var(--progress-track-fill-bg));
     background-repeat: no-repeat;
     background-size: 0% 100%;
 }
@@ -207,6 +209,13 @@ input[type="range"].volume-slider:active::-webkit-slider-thumb {
     height: 0%;
     transition: height 0.1s ease-out;
 }
+
+/* Master meter specific styles */
+.vertical-meter-wrapper.master-meter {
+    width: 8px;
+    height: 60px;
+}
+
 
 /*
  * =============================================
