@@ -1,11 +1,14 @@
-/* style.css (Final Version) */
+/*
+ * =============================================
+ * Global & Root Variables
+ * =============================================
+ */
 
-/* 定义 CSS 变量 */
 :root {
     --track-bg: #e5e7eb;
+    --track-fill-bg: #60a5fa;
     --thumb-bg: #3b82f6;
     --thumb-hover-bg: #2563eb;
-    --track-fill-bg: #60a5fa;
     --mute-button-bg: #8b5cf6;
     --mute-button-border: #7c3aed;
 }
@@ -14,24 +17,28 @@ body {
     -webkit-tap-highlight-color: transparent;
 }
 
-/* --- 歌曲选择下拉菜单 --- */
+/*
+ * =============================================
+ * Song Selection Dropdown
+ * =============================================
+ */
+
 #song-select {
     -webkit-appearance: none;
     appearance: none;
     background-color: #f9fafb;
     border: 1px solid #d1d5db;
     border-radius: 0.5rem;
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 3rem 0.75rem 1rem;
     font-size: 1rem;
     font-weight: 500;
     color: #1f2937;
     cursor: pointer;
-    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
     background-position: right 0.5rem center;
     background-repeat: no-repeat;
     background-size: 1.5em 1.5em;
-    padding-right: 3rem;
+    transition: border-color 0.2s ease-out, box-shadow 0.2s ease-out;
 }
 
 #song-select:hover {
@@ -44,6 +51,12 @@ body {
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
 }
 
+/*
+ * =============================================
+ * Volume Slider (Triangular)
+ * =============================================
+ */
+
 input[type="range"].volume-slider {
     -webkit-appearance: none;
     appearance: none;
@@ -55,20 +68,20 @@ input[type="range"].volume-slider {
     position: relative;
 }
 
-/* 使用伪元素绘制三角形轨道背景 */
+/* Triangular track background */
 input[type="range"].volume-slider::before {
     content: '';
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
     width: 100%;
-    height: 10px; /* 三角形轨道的高度 */
+    height: 10px;
     background: var(--track-bg);
     clip-path: polygon(0% 100%, 100% 0%, 100% 100%);
     z-index: 1;
 }
 
-/* 绘制填充颜色的部分 */
+/* Colored fill part */
 input[type="range"].volume-slider::after {
     content: '';
     position: absolute;
@@ -76,30 +89,23 @@ input[type="range"].volume-slider::after {
     transform: translateY(-50%);
     width: 100%;
     height: 10px;
-    background: none;
-    /* 通过渐变和 clip-path 动态绘制左侧三角形填充 */
-    background: linear-gradient(to right, var(--track-fill-bg) 0%, var(--track-fill-bg) var(--value-percent,75%), transparent var(--value-percent,75%), transparent 100%);
-    /* 动态 clip-path，JS 负责设置 --triangle-x 和 --triangle-y */
-    clip-path: polygon(
-        0% 100%, 
-        var(--triangle-x,75%) var(--triangle-y,25%), 
-        var(--triangle-x,75%) 100%
-    );
+    background: linear-gradient(to right, var(--track-fill-bg) 0%, var(--track-fill-bg) var(--value-percent, 75%), transparent var(--value-percent, 75%));
+    clip-path: polygon(0% 100%, var(--triangle-x, 75%) var(--triangle-y, 25%), var(--triangle-x, 75%) 100%);
     z-index: 2;
 }
 
-/* 音量滑块按钮（Thumb）*/
+/* Thumb styles */
 input[type="range"].volume-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
     width: 6px;
-    height: 22px; 
+    height: 22px;
     background: var(--thumb-bg);
     border-radius: 3px;
     border: 2px solid white;
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
     position: relative;
-    z-index: 3; /* 确保滑块在最顶层 */
+    z-index: 3; /* Ensure thumb is on top */
     transition: transform 0.2s ease-out, background-color 0.2s ease-out;
 }
 
@@ -112,7 +118,12 @@ input[type="range"].volume-slider:active::-webkit-slider-thumb {
     transform: scale(1.3);
 }
 
-/* --- 播放进度滑块 (#master-progress) --- */
+/*
+ * =============================================
+ * Master Progress Slider
+ * =============================================
+ */
+
 #master-progress {
     -webkit-appearance: none;
     appearance: none;
@@ -122,13 +133,11 @@ input[type="range"].volume-slider:active::-webkit-slider-thumb {
     border-radius: 9999px;
     outline: none;
     cursor: pointer;
-    position: relative;
     background-image: linear-gradient(var(--track-fill-bg), var(--track-fill-bg));
     background-repeat: no-repeat;
     background-size: 0% 100%;
 }
 
-/* 播放进度滑块按钮（Thumb）*/
 #master-progress::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
@@ -146,13 +155,22 @@ input[type="range"].volume-slider:active::-webkit-slider-thumb {
     transform: scale(1.2);
 }
 
+/*
+ * =============================================
+ * Tooltips
+ * =============================================
+ */
 
-/* --- 音量提示框样式 --- */
 .volume-tooltip {
     transform: translate(-50%, -26px);
 }
 
-/* --- 波形图样式 --- */
+/*
+ * =============================================
+ * Waveform & Meters
+ * =============================================
+ */
+
 .waveform-container {
     height: 60px;
     background-color: #f3f4f6;
@@ -161,33 +179,20 @@ input[type="range"].volume-slider:active::-webkit-slider-thumb {
     position: relative;
     overflow: hidden;
 }
-.waveform-svg { width: 100%; height: 100%; }
-.waveform-path { fill: #10B981; stroke: none; }
-.waveform-baseline { stroke: #047857; stroke-width: 1; }
-.waveform-progress-line { stroke: #f07272; stroke-width: 8; transition: transform 0.05s ease-out; }
-
-/* --- 独奏和静音按钮样式 --- */
-.control-button {
-    padding-left: 8px;
-    padding-right: 8px;
-    height: 28px;
-    border-radius: 6px;
-    font-weight: bold;
-    font-size: 13px;
-    cursor: pointer;
-    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid #d1d5db;
+.waveform-container svg {
+    width: 100%;
+    height: 100%;
+}
+.waveform-progress-line {
+    stroke: #f07272;
+    stroke-width: 8;
 }
 
-.mute-button { background-color: #f3f4f6; color: #4b5563; }
-.mute-button.active { background-color: var(--mute-button-bg); color: white; border-color: var(--mute-button-border); }
-.solo-button { background-color: #f3f4f6; color: #4b5563; }
-.solo-button.active { background-color: #f59e0b; color: white; border-color: #d97706; }
+.waveform-baseline {
+    stroke: #047857;
+    stroke-width: 0.5;
+}
 
-/* --- 垂直电平指示器样式 --- */
 .vertical-meter-wrapper {
     width: 32px;
     height: 60px;
@@ -197,17 +202,69 @@ input[type="range"].volume-slider:active::-webkit-slider-thumb {
     display: flex;
     align-items: flex-end;
 }
-.vertical-meter-bar { width: 100%; height: 0%; transition: height 0.1s ease-out, background-color 0.1s ease-out; }
+.vertical-meter-bar {
+    width: 100%;
+    height: 0%;
+    transition: height 0.1s ease-out;
+}
 
-/* Firefox 兼容性样式 */
-input[type="range"]::-moz-range-track { background: transparent; border: none; }
+/*
+ * =============================================
+ * Control Buttons (Mute/Solo)
+ * =============================================
+ */
+
+.control-button {
+    padding: 0 8px;
+    height: 28px;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 13px;
+    cursor: pointer;
+    border: 1px solid #d1d5db;
+    background-color: #f3f4f6;
+    color: #4b5563;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mute-button.active {
+    background-color: var(--mute-button-bg);
+    color: white;
+    border-color: var(--mute-button-border);
+}
+.solo-button.active {
+    background-color: #f59e0b;
+    color: white;
+    border-color: #d97706;
+}
+
+/*
+ * =============================================
+ * Firefox Compatibility
+ * =============================================
+ */
+ 
+/* Basic thumb styles for Firefox */
 input[type="range"]::-moz-range-thumb {
     border: 2px solid white;
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+    border-radius: 3px;
+    cursor: pointer;
 }
+
 #master-progress::-moz-range-thumb {
-    width: 16px; height: 16px; background: #ffffff; border-radius: 50%;
+    width: 16px; 
+    height: 16px; 
+    background: #ffffff; 
+    border-radius: 50%;
+    border: 2px solid #3b82f6;
 }
+
 .volume-slider::-moz-range-thumb {
-    width: 6px; height: 20px; background: var(--thumb-bg); border-radius: 3px;
+    width: 6px; 
+    height: 22px; 
+    background: var(--thumb-bg);
 }

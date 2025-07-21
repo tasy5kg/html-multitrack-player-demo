@@ -1,24 +1,14 @@
-// 选择歌曲后隐藏下拉菜单并显示歌曲名
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', () => {
+
+    // --- DOM Elements ---
     const songSelect = document.getElementById('song-select');
     const selectedSongName = document.getElementById('selected-song-name');
-    if (songSelect && selectedSongName) {
-        songSelect.addEventListener('change', function () {
-            const selectedOption = songSelect.options[songSelect.selectedIndex];
-            if (selectedOption && selectedOption.value) {
-                // 隐藏下拉菜单
-                songSelect.classList.add('hidden');
-                // 显示歌曲名
-                selectedSongName.textContent = selectedOption.textContent;
-                selectedSongName.classList.remove('hidden');
-            }
-        });
-    }
-});
-// 等待 DOM 内容完全加载后执行脚本
-document.addEventListener('DOMContentLoaded', () => {
-    // --- DOM 元素 ---
-    const mixerTracksContainer = document.getElementById('mixer-tracks');
+    const qualitySelectionContainer = document.getElementById('quality-selection-container');
+    const loadHqBtn = document.getElementById('load-hq-btn');
+    const loadLqBtn = document.getElementById('load-lq-btn');
+    const hqSizeSpan = document.getElementById('hq-size');
+    const lqSizeSpan = document.getElementById('lq-size');
+    const mainPlayerControls = document.getElementById('main-player-controls');
     const playPauseBtn = document.getElementById('play-pause-btn');
     const loadingIcon = document.getElementById('loading-icon');
     const errorIcon = document.getElementById('error-icon');
@@ -31,226 +21,220 @@ document.addEventListener('DOMContentLoaded', () => {
     const masterProgress = document.getElementById('master-progress');
     const currentTimeDisplay = document.getElementById('current-time');
     const totalDurationDisplay = document.getElementById('total-duration');
-    const qualitySelectionContainer = document.getElementById('quality-selection-container');
-    const mainPlayerControls = document.getElementById('main-player-controls');
-    const loadHqBtn = document.getElementById('load-hq-btn');
-    const loadLqBtn = document.getElementById('load-lq-btn');
-    const hqSizeSpan = document.getElementById('hq-size');
-    const lqSizeSpan = document.getElementById('lq-size');
-    const songSelect = document.getElementById('song-select');
-    const songSelectionContainer = document.getElementById('song-selection-container');
-    const progressTooltip = document.getElementById('progress-tooltip'); // 新增
+    const progressTooltip = document.getElementById('progress-tooltip');
+    const mixerTracksContainer = document.getElementById('mixer-tracks');
 
-    // --- 全局状态 ---
-    let audioContext;
-    let tracks = [];
-    let isInitialized = false;
-    let isPlaying = false;
-    let isSeeking = false;
-    let startTime = 0;
-    let startOffset = 0;
-    let minDuration = Infinity;
-    let animationFrameId;
-    let totalDownloadSize = 0;
-    let storedHqBytes = 0;
-    let storedLqBytes = 0;
-    let songsList = [];
-    let currentSong = null;
-    let tracksData = [];
-    let resizeObserver = null;
-    let isAnyTrackSoloed = false; // 独奏状态标志
+    // --- State Management ---
+    const state = {
+        audioContext: null,
+        tracks: [],
+        songsList: [],
+        currentSong: null,
+        isInitialized: false,
+        isPlaying: false,
+        isSeeking: false,
+        isAnyTrackSoloed: false,
+        startTime: 0,
+        startOffset: 0,
+        minDuration: Infinity,
+        animationFrameId: null,
+        totalDownloadSize: 0,
+        storedHqBytes: 0,
+        storedLqBytes: 0,
+        resizeObserver: null,
+    };
 
+    // --- Initialization ---
 
-    // --- 歌曲选择相关 ---
+    /**
+     * Main initialization function, entry point of the application.
+     */
+    function initialize() {
+        mainPlayerControls.classList.add('hidden');
+        qualitySelectionContainer.classList.add('hidden');
+        mixerTracksContainer.innerHTML = '';
+        loadSongsList();
+        bindGlobalEvents();
+    }
+
+    /**
+     * Fetches the list of songs from songs.json and populates the dropdown.
+     */
     async function loadSongsList() {
         try {
-            const res = await fetch('songs.json');
-            songsList = await res.json();
+            const response = await fetch('songs.json');
+            if (!response.ok) throw new Error('Failed to load songs list.');
+            state.songsList = await response.json();
+            
             songSelect.innerHTML = '<option value="" selected disabled>请选择歌曲</option>';
-            songsList.forEach((song, idx) => {
-                const opt = document.createElement('option');
-                opt.value = idx;
-                opt.textContent = song.name;
-                songSelect.appendChild(opt);
+            state.songsList.forEach((song, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = song.name;
+                songSelect.appendChild(option);
             });
-        } catch (e) {
+        } catch (error) {
+            console.error(error);
             songSelect.innerHTML = '<option value="">加载失败</option>';
         }
     }
 
-    songSelect.addEventListener('change', () => {
-        const idx = songSelect.value;
-        if (songsList[idx]) {
-            currentSong = songsList[idx];
-            tracksData = currentSong.tracksData.map(track => ({
-                name: track.name,
-                baseName: track.file,
-                defaultVolume: 75,
-                folder: currentSong.folder
-            }));
+    /**
+     * Binds event listeners that are available from the start.
+     */
+    function bindGlobalEvents() {
+        songSelect.addEventListener('change', handleSongSelection);
+        loadHqBtn.addEventListener('click', () => startLoading('hq'));
+        loadLqBtn.addEventListener('click', () => startLoading('lq'));
+        playPauseBtn.addEventListener('click', togglePlayPause);
+
+        // Master progress bar events
+        masterProgress.addEventListener('input', handleMasterProgressInput);
+        masterProgress.addEventListener('change', handleMasterProgressChange);
+        masterProgress.addEventListener('mousedown', () => state.isSeeking = true);
+        masterProgress.addEventListener('mouseup', () => state.isSeeking = false);
+        masterProgress.addEventListener('touchstart', () => state.isSeeking = true, { passive: true });
+        masterProgress.addEventListener('touchend', () => state.isSeeking = false);
+    }
+
+    // --- Song & Quality Selection ---
+
+    /**
+     * Handles the change event of the song selection dropdown.
+     */
+    function handleSongSelection() {
+        const selectedIndex = songSelect.value;
+        if (state.songsList[selectedIndex]) {
+            state.currentSong = state.songsList[selectedIndex];
+            
+            // Update UI
+            songSelect.classList.add('hidden');
+            selectedSongName.textContent = state.currentSong.name;
+            selectedSongName.classList.remove('hidden');
             qualitySelectionContainer.classList.remove('hidden');
             mainPlayerControls.classList.add('hidden');
-            mixerTracksContainer.innerHTML = '';
-            isInitialized = false;
-            isAnyTrackSoloed = false;
-
-            if (resizeObserver) {
-                resizeObserver.disconnect();
-                resizeObserver = null;
-            }
-
-            tracks = [];
-            hqSizeSpan.textContent = '(计算中…)';
-            lqSizeSpan.textContent = '(计算中…)';
-            [storedHqBytes, storedLqBytes] = [0, 0];
-            (async () => {
-                [storedHqBytes, storedLqBytes] = await Promise.all([
-                    calculateTotalSize('ogg', hqSizeSpan),
-                    calculateTotalSize('m4a', lqSizeSpan)
-                ]);
-                loadHqBtn.disabled = false;
-                loadLqBtn.disabled = false;
-            })();
-            setupUI();
-            bindUIEvents();
-        }
-    });
-
-    // --- 动态生成音轨 UI ---
-    function setupUI() {
-        mixerTracksContainer.innerHTML = '';
-        tracks = [];
-        mixerTracksContainer.classList.add('opacity-50', 'pointer-events-none');
-        tracksData.forEach((trackData) => {
-            const trackElement = document.createElement('div');
-            trackElement.className = 'py-3';
-
-            // --- 上方部分: 轨道名, 音量滑块, 独奏/静音按钮 ---
-            const topRow = document.createElement('div');
-            topRow.className = 'flex items-center justify-between space-x-4 mb-2';
-
-            const label = document.createElement('label');
-            label.textContent = trackData.name;
-            label.className = 'text-sm font-bold text-gray-700 w-28 truncate'; // 固定宽度并截断长文本
-
-            const sliderWrapper = document.createElement('div');
-            sliderWrapper.className = 'relative flex-grow h-[20px] flex items-center';
-            const volumeSlider = document.createElement('input');
-            volumeSlider.type = 'range';
-            volumeSlider.min = 0;
-            volumeSlider.max = 100;
-            volumeSlider.value = trackData.defaultVolume;
-            volumeSlider.className = 'volume-slider w-full';
-            const volumeTooltip = document.createElement('div');
-            volumeTooltip.className = 'volume-tooltip absolute top-0 bg-gray-800 text-white text-xs rounded py-1 px-2 pointer-events-none opacity-0 transition-opacity duration-200';
-            volumeTooltip.textContent = `${trackData.defaultVolume}%`;
-            sliderWrapper.appendChild(volumeSlider);
-            sliderWrapper.appendChild(volumeTooltip);
-
-            const soloMuteContainer = document.createElement('div');
-            soloMuteContainer.className = 'flex items-center space-x-2 flex-shrink-0';
-
-            const muteBtn = document.createElement('button');
-            muteBtn.textContent = '静音';
-            muteBtn.className = 'control-button mute-button';
-
-            const soloBtn = document.createElement('button');
-            soloBtn.textContent = '独奏';
-            soloBtn.className = 'control-button solo-button';
-
-            soloMuteContainer.appendChild(muteBtn);
-            soloMuteContainer.appendChild(soloBtn);
-
-            topRow.appendChild(label);
-            topRow.appendChild(sliderWrapper);
-            topRow.appendChild(soloMuteContainer);
-
-            // --- 下方部分: 波形图和垂直电平指示器 ---
-            const bottomRow = document.createElement('div');
-            bottomRow.className = 'flex items-center space-x-2';
-
-            const waveformContainer = document.createElement('div');
-            waveformContainer.className = 'waveform-container flex-grow'; // 使用 flex-grow 占据剩余空间
-
-            const meterWrapper = document.createElement('div');
-            // 使用新的 'vertical-meter-wrapper' class
-            meterWrapper.className = 'vertical-meter-wrapper';
-            const meterBar = document.createElement('div');
-            // 使用新的 'vertical-meter-bar' class
-            meterBar.className = 'vertical-meter-bar';
-            meterWrapper.appendChild(meterBar);
-
-            bottomRow.appendChild(waveformContainer);
-            bottomRow.appendChild(meterWrapper);
-
-            trackElement.appendChild(topRow);
-            trackElement.appendChild(bottomRow);
-            mixerTracksContainer.appendChild(trackElement);
-
-
-            const isMetronome = trackData.name === '节拍器';
             
-            // 初始化音量滑块的填充
-            updateVolumeSliderFill(volumeSlider, trackData.defaultVolume);
+            resetPlayerState();
+            setupNewSong();
+        }
+    }
 
-            tracks.push({
-                ...trackData,
-                lastVolume: trackData.defaultVolume / 100,
-                isMuted: isMetronome,
-                isSoloed: false,
-                ui: {
-                    volumeSlider,
-                    tooltip: volumeTooltip,
-                    meterBar,
-                    waveformContainer,
-                    muteBtn,
-                    soloBtn
-                }
-            });
+    /**
+     * Resets the player state when a new song is selected.
+     */
+    function resetPlayerState() {
+        if (state.audioContext && state.audioContext.state !== 'closed') {
+            state.audioContext.close();
+        }
+        if (state.resizeObserver) {
+            state.resizeObserver.disconnect();
+        }
+        
+        Object.assign(state, {
+            audioContext: null,
+            tracks: [],
+            isInitialized: false,
+            isPlaying: false,
+            isAnyTrackSoloed: false,
+            startOffset: 0,
+            minDuration: Infinity,
+            totalDownloadSize: 0,
+            storedHqBytes: 0,
+            storedLqBytes: 0,
+            resizeObserver: null,
+        });
+        
+        mixerTracksContainer.innerHTML = '';
+        cancelAnimationFrame(state.animationFrameId);
+    }
+    
+    /**
+     * Sets up UI and calculates sizes for the newly selected song.
+     */
+    function setupNewSong() {
+        const tracksData = state.currentSong.tracksData.map(track => ({
+            name: track.name,
+            baseName: track.file, 
+            defaultVolume: 75,
+            folder: state.currentSong.folder,
+        }));
 
-            if (isMetronome) {
-                muteBtn.classList.add('active');
-            }
+        createTrackUI(tracksData);
+        
+        hqSizeSpan.textContent = '(计算中…)';
+        lqSizeSpan.textContent = '(计算中…)';
+        loadHqBtn.disabled = true;
+        loadLqBtn.disabled = true;
+
+        Promise.all([
+            calculateTotalSize('ogg', hqSizeSpan),
+            calculateTotalSize('m4a', lqSizeSpan)
+        ]).then(([hqBytes, lqBytes]) => {
+            state.storedHqBytes = hqBytes;
+            state.storedLqBytes = lqBytes;
+            loadHqBtn.disabled = false;
+            loadLqBtn.disabled = false;
         });
     }
 
     /**
-     * @function initializeAudio
-     * @description 初始化 Web Audio API，创建音频节点，并加载所有音轨
+     * Starts the audio loading process after quality selection.
+     * @param {'hq' | 'lq'} quality - The selected audio quality.
+     */
+    function startLoading(quality) {
+        qualitySelectionContainer.classList.add('hidden');
+        mainPlayerControls.classList.remove('hidden');
+        
+        const extension = quality === 'hq' ? 'ogg' : 'm4a';
+        state.tracks.forEach(track => {
+            track.file = `${track.folder}/${track.baseName}.${extension}`;
+        });
+        
+        state.totalDownloadSize = (quality === 'hq') ? state.storedHqBytes : state.storedLqBytes;
+        initializeAudio();
+    }
+
+    // --- Audio Processing ---
+
+    /**
+     * Initializes the Web Audio API context and loads all audio tracks.
      */
     async function initializeAudio() {
-        isInitialized = true;
-        playPauseBtn.disabled = true;
-        playIcon.classList.add('hidden');
-        loadingIcon.classList.remove('hidden');
+        if (state.isInitialized) return;
+        state.isInitialized = true;
+        
+        updatePlayPauseButton(true); // Show loading state
         loadingText.innerHTML = `正在加载音频资源(<span id="load-progress-percent">0</span>%)`;
 
         try {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            tracks.forEach(track => {
-                const gainNode = audioContext.createGain();
-                gainNode.gain.value = 0;
-                const analyserNode = audioContext.createAnalyser();
+            state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Create audio nodes for each track
+            state.tracks.forEach(track => {
+                const gainNode = state.audioContext.createGain();
+                gainNode.gain.value = track.isMuted ? 0 : track.lastVolume;
+                const analyserNode = state.audioContext.createAnalyser();
                 analyserNode.fftSize = 2048;
-                gainNode.connect(analyserNode);
-                analyserNode.connect(audioContext.destination);
+                gainNode.connect(analyserNode).connect(state.audioContext.destination);
+                
                 track.gainNode = gainNode;
                 track.analyserNode = analyserNode;
                 track.timeDomainData = new Float32Array(analyserNode.fftSize);
             });
 
             await loadAudioTracksWithProgress();
+            
             mixerTracksContainer.classList.remove('opacity-50', 'pointer-events-none');
             playPauseBtn.disabled = false;
 
             updateAllTrackVolumes();
             initializeResizeObserver();
-            updateMasterProgressFill(); // 新增：初始化进度条填充
+            updateMasterProgressFill();
 
             play();
 
         } catch (error) {
-            console.error("音频初始化失败：", error);
+            console.error("Audio initialization failed:", error);
             loadingIcon.classList.add('hidden');
             loadingText.classList.add('hidden');
             errorText.classList.remove('hidden');
@@ -260,18 +244,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * @function loadAudioTracksWithProgress
-     * @description 使用 Fetch API 流式加载音频文件，并实时更新加载进度
+     * Loads audio files streamingly with progress updates.
      */
     async function loadAudioTracksWithProgress() {
         let loadedBytes = 0;
         const loadProgressPercentSpan = document.getElementById('load-progress-percent');
 
-        const loadPromises = tracks.map(async (track) => {
-            if (!track.file) throw new Error(`轨道 "${track.name}" 的文件路径未设置。`);
+        const loadPromises = state.tracks.map(async (track) => {
+            if (!track.file) throw new Error(`File path for track "${track.name}" is not set.`);
+            
             const response = await fetch(track.file);
-            if (!response.ok) throw new Error(`无法加载 ${track.file}`);
-            if (!response.body) throw new Error('浏览器不支持流式读取');
+            if (!response.ok) throw new Error(`Could not load ${track.file}`);
+            if (!response.body) throw new Error('Streaming not supported.');
 
             const reader = response.body.getReader();
             const chunks = [];
@@ -280,15 +264,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (done) break;
                 chunks.push(value);
                 loadedBytes += value.length;
-                if (totalDownloadSize > 0) {
-                    const percent = Math.min(100, Math.round((loadedBytes / totalDownloadSize) * 100));
+                if (state.totalDownloadSize > 0) {
+                    const percent = Math.min(100, Math.round((loadedBytes / state.totalDownloadSize) * 100));
                     if (loadProgressPercentSpan) loadProgressPercentSpan.textContent = percent;
                 }
             }
+            
             const blob = new Blob(chunks);
             const arrayBuffer = await blob.arrayBuffer();
-            track.audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-
+            track.audioBuffer = await state.audioContext.decodeAudioData(arrayBuffer);
             track.waveformData = generateWaveformData(track.audioBuffer);
 
             return track.audioBuffer.duration;
@@ -299,30 +283,410 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (results.some(r => r.status === 'rejected')) {
             const failed = results.find(r => r.status === 'rejected');
-            throw new Error(`加载失败: ${failed.reason.message}`);
+            throw new Error(`Load failed: ${failed.reason.message}`);
         }
 
-        minDuration = Math.min(...successfulLoads);
-        masterProgress.max = minDuration;
-        totalDurationDisplay.textContent = formatTime(minDuration);
+        state.minDuration = Math.min(...successfulLoads);
+        masterProgress.max = state.minDuration;
+        totalDurationDisplay.textContent = formatTime(state.minDuration);
         progressStatusContainer.classList.add('hidden');
         playerProgressContainer.classList.remove('hidden');
 
-        tracks.forEach(track => {
-            drawWaveform(track);
+        state.tracks.forEach(drawWaveform);
+    }
+    
+    /**
+     * Starts or resumes playback for all tracks.
+     */
+    function play() {
+        if (state.isPlaying) return;
+        if (state.audioContext.state === 'suspended') {
+            state.audioContext.resume();
+        }
+        if (state.startOffset >= state.minDuration) state.startOffset = 0;
+
+        state.tracks.forEach(track => {
+            const source = state.audioContext.createBufferSource();
+            source.buffer = track.audioBuffer;
+            source.connect(track.gainNode);
+            source.start(0, state.startOffset);
+            track.sourceNode = source;
         });
+
+        state.isPlaying = true;
+        state.startTime = state.audioContext.currentTime;
+        updateAllTrackVolumes();
+        updatePlayPauseButton();
+        state.animationFrameId = requestAnimationFrame(updateProgress);
     }
 
     /**
-     * @function generateWaveformData
-     * @description 根据音频数据生成精确的波形数据点
+     * Pauses playback for all tracks.
+     */
+    function pause() {
+        if (!state.isPlaying) return;
+        const elapsed = state.audioContext.currentTime - state.startTime;
+        cancelAnimationFrame(state.animationFrameId);
+
+        state.tracks.forEach(track => {
+            if (track.sourceNode) {
+                track.sourceNode.stop(0);
+                track.sourceNode.disconnect();
+                track.sourceNode = null;
+            }
+        });
+
+        state.isPlaying = false;
+        state.startOffset += elapsed;
+        updatePlayPauseButton();
+    }
+    
+    /**
+     * Toggles between play and pause states.
+     */
+    function togglePlayPause() {
+        if (!state.isInitialized) return;
+        if (state.isPlaying) {
+            pause();
+        } else {
+            play();
+        }
+    }
+
+    // --- UI & Visualization ---
+    
+    /**
+     * Creates and appends the UI for all tracks.
+     * @param {Array<Object>} tracksData - The data for all tracks.
+     */
+    function createTrackUI(tracksData) {
+        mixerTracksContainer.innerHTML = '';
+        state.tracks = [];
+        mixerTracksContainer.classList.add('opacity-50', 'pointer-events-none');
+
+        tracksData.forEach((trackData) => {
+            const { trackElement, uiComponents } = buildSingleTrackUI(trackData);
+            mixerTracksContainer.appendChild(trackElement);
+            
+            const isMetronome = trackData.name === '节拍器';
+            
+            const track = {
+                ...trackData,
+                lastVolume: trackData.defaultVolume / 100,
+                isMuted: isMetronome,
+                isSoloed: false,
+                ui: uiComponents,
+            };
+            
+            state.tracks.push(track);
+            bindTrackEvents(track);
+
+            // Initial UI state
+            updateVolumeSliderFill(uiComponents.volumeSlider, trackData.defaultVolume);
+            if (isMetronome) {
+                uiComponents.muteBtn.classList.add('active');
+            }
+        });
+        
+        // Hide all volume tooltips initially
+        const hideAllTooltips = () => {
+            state.tracks.forEach(track => hideTooltip(track.ui));
+        };
+        document.addEventListener('mouseup', hideAllTooltips);
+        document.addEventListener('touchend', hideAllTooltips);
+    }
+    
+    /**
+     * Builds the DOM elements for a single track.
+     * @param {Object} trackData - The data for one track.
+     * @returns {{trackElement: HTMLElement, uiComponents: Object}}
+     */
+    function buildSingleTrackUI(trackData) {
+        const trackElement = document.createElement('div');
+        trackElement.className = 'py-3';
+        
+        // Top Row: Label, Slider, Controls
+        const topRow = document.createElement('div');
+        topRow.className = 'flex items-center justify-between space-x-4 mb-2';
+        
+        const label = document.createElement('label');
+        label.textContent = trackData.name;
+        label.className = 'text-sm font-bold text-gray-700 w-28 truncate';
+
+        const { sliderWrapper, volumeSlider, volumeTooltip } = createVolumeSlider(trackData);
+        const { soloMuteContainer, muteBtn, soloBtn } = createControlButtons();
+        
+        topRow.append(label, sliderWrapper, soloMuteContainer);
+        
+        // Bottom Row: Waveform, Meter
+        const bottomRow = document.createElement('div');
+        bottomRow.className = 'flex items-center space-x-2';
+        
+        const waveformContainer = document.createElement('div');
+        waveformContainer.className = 'waveform-container flex-grow';
+        
+        const { meterWrapper, meterBar } = createLevelMeter();
+        
+        bottomRow.append(waveformContainer, meterWrapper);
+        trackElement.append(topRow, bottomRow);
+
+        return {
+            trackElement,
+            uiComponents: { volumeSlider, tooltip: volumeTooltip, meterBar, waveformContainer, muteBtn, soloBtn }
+        };
+    }
+    
+    // --- UI Component Builders ---
+
+    function createVolumeSlider(trackData) {
+        const sliderWrapper = document.createElement('div');
+        sliderWrapper.className = 'relative flex-grow h-[20px] flex items-center';
+        const volumeSlider = document.createElement('input');
+        Object.assign(volumeSlider, { type: 'range', min: 0, max: 100, value: trackData.defaultVolume });
+        volumeSlider.className = 'volume-slider w-full';
+        
+        const volumeTooltip = document.createElement('div');
+        volumeTooltip.className = 'volume-tooltip absolute top-0 bg-gray-800 text-white text-xs rounded py-1 px-2 pointer-events-none opacity-0 transition-opacity duration-200';
+        volumeTooltip.textContent = `${trackData.defaultVolume}%`;
+        
+        sliderWrapper.append(volumeSlider, volumeTooltip);
+        return { sliderWrapper, volumeSlider, volumeTooltip };
+    }
+
+    function createControlButtons() {
+        const soloMuteContainer = document.createElement('div');
+        soloMuteContainer.className = 'flex items-center space-x-2 flex-shrink-0';
+        const muteBtn = document.createElement('button');
+        muteBtn.textContent = '静音';
+        muteBtn.className = 'control-button mute-button';
+        const soloBtn = document.createElement('button');
+        soloBtn.textContent = '独奏';
+        soloBtn.className = 'control-button solo-button';
+        soloMuteContainer.append(muteBtn, soloBtn);
+        return { soloMuteContainer, muteBtn, soloBtn };
+    }
+
+    function createLevelMeter() {
+        const meterWrapper = document.createElement('div');
+        meterWrapper.className = 'vertical-meter-wrapper';
+        const meterBar = document.createElement('div');
+        meterBar.className = 'vertical-meter-bar';
+        meterWrapper.appendChild(meterBar);
+        return { meterWrapper, meterBar };
+    }
+    
+    // --- Event Binding ---
+    
+    /**
+     * Binds events to a single track's UI elements.
+     * @param {Object} track - The track object.
+     */
+    function bindTrackEvents(track) {
+        const { volumeSlider, muteBtn, soloBtn, waveformContainer } = track.ui;
+        
+        volumeSlider.addEventListener('input', e => handleVolumeChange(e, track));
+        volumeSlider.addEventListener('mousedown', () => showTooltip(track.ui));
+        volumeSlider.addEventListener('touchstart', () => showTooltip(track.ui), { passive: true });
+        
+        muteBtn.addEventListener('click', () => handleMuteClick(track));
+        soloBtn.addEventListener('click', () => handleSoloClick(track));
+        
+        waveformContainer.addEventListener('click', e => handleWaveformClick(e, track, waveformContainer));
+    }
+    
+    // --- Event Handlers ---
+    
+    function handleVolumeChange(event, track) {
+        const value = parseFloat(event.target.value);
+        track.lastVolume = value / 100;
+        updateAllTrackVolumes();
+        updateVolumeSliderFill(track.ui.volumeSlider, value);
+        updateTooltip(track.ui);
+    }
+    
+    function handleMuteClick(track) {
+        track.isMuted = !track.isMuted;
+        track.ui.muteBtn.classList.toggle('active', track.isMuted);
+        updateAllTrackVolumes();
+    }
+    
+    function handleSoloClick(track) {
+        track.isSoloed = !track.isSoloed;
+        track.ui.soloBtn.classList.toggle('active', track.isSoloed);
+        state.isAnyTrackSoloed = state.tracks.some(t => t.isSoloed);
+        updateAllTrackVolumes();
+    }
+    
+    function handleWaveformClick(event, track, container) {
+        const rect = container.getBoundingClientRect();
+        const clickX = event.clientX - rect.left;
+        const seekTime = (clickX / rect.width) * state.minDuration;
+        
+        seek(seekTime);
+    }
+    
+    function handleMasterProgressInput() {
+        showProgressTooltip();
+        updateMasterProgressFill();
+    }
+
+    function handleMasterProgressChange() {
+        hideProgressTooltip();
+        seek(parseFloat(masterProgress.value));
+    }
+    
+    /**
+     * Seeks to a specific time in the audio.
+     * @param {number} seekTime - The time to seek to, in seconds.
+     */
+    function seek(seekTime) {
+        if (state.isPlaying) {
+            pause();
+            state.startOffset = seekTime;
+            play();
+        } else {
+            state.startOffset = seekTime;
+            masterProgress.value = seekTime;
+            currentTimeDisplay.textContent = formatTime(seekTime);
+            updateWaveformProgressLine(seekTime);
+            updateMasterProgressFill();
+        }
+    }
+    
+    // --- Volume & Mute/Solo Logic ---
+    
+    /**
+     * Updates the actual gain of all tracks based on their mute/solo state.
+     */
+    function updateAllTrackVolumes() {
+        if (!state.audioContext) return;
+
+        state.tracks.forEach(track => {
+            let finalVolume = 0;
+            if (state.isAnyTrackSoloed) {
+                if (track.isSoloed && !track.isMuted) {
+                    finalVolume = track.lastVolume;
+                }
+            } else {
+                if (!track.isMuted) {
+                    finalVolume = track.lastVolume;
+                }
+            }
+            if (track.gainNode) {
+                track.gainNode.gain.setTargetAtTime(finalVolume, state.audioContext.currentTime, 0.01);
+            }
+        });
+    }
+
+    // --- Animation & Updates ---
+    
+    /**
+     * The main update loop called by requestAnimationFrame.
+     */
+    function updateProgress() {
+        if (!state.isPlaying) {
+            cancelAnimationFrame(state.animationFrameId);
+            return;
+        }
+
+        const latency = state.audioContext.outputLatency || 0;
+        const currentTime = state.startOffset + (state.audioContext.currentTime - state.startTime) - latency;
+
+        if (currentTime >= state.minDuration) {
+            pause();
+            state.startOffset = state.minDuration;
+            masterProgress.value = state.minDuration;
+            currentTimeDisplay.textContent = formatTime(state.minDuration);
+            updateWaveformProgressLine(state.minDuration);
+            updateMasterProgressFill();
+        } else {
+            if (!state.isSeeking) {
+                masterProgress.value = currentTime;
+                currentTimeDisplay.textContent = formatTime(currentTime);
+                updateWaveformProgressLine(currentTime);
+                updateMasterProgressFill();
+            }
+            state.animationFrameId = requestAnimationFrame(updateProgress);
+        }
+        updateLevelMeters();
+    }
+    
+    /**
+     * Updates the visual level meters for each track.
+     */
+    function updateLevelMeters() {
+        const MIN_DB = -60.0;
+        state.tracks.forEach(track => {
+            const { ui, analyserNode, timeDomainData } = track;
+            if (!analyserNode || !ui.meterBar) return;
+            
+            analyserNode.getFloatTimeDomainData(timeDomainData);
+            let peakAmplitude = 0.0;
+            for (const sample of timeDomainData) {
+                const absSample = Math.abs(sample);
+                if (absSample > peakAmplitude) peakAmplitude = absSample;
+            }
+            
+            if (peakAmplitude === 0) {
+                ui.meterBar.style.height = '0%';
+                return;
+            }
+            
+            const peakDb = 20 * Math.log10(peakAmplitude);
+            const levelPercent = peakDb < MIN_DB ? 0 : Math.min(100, Math.max(0, ((((peakDb - MIN_DB) / -MIN_DB) ** 2) * 100) | 0));
+            
+            ui.meterBar.style.height = `${levelPercent}%`;
+            ui.meterBar.style.backgroundColor = `rgb(0, 201, 81)`;
+        });
+    }
+    
+    // --- UI Update Functions ---
+    
+    function updatePlayPauseButton(isLoading = false) {
+        if (isLoading) {
+            playPauseBtn.disabled = true;
+            playIcon.classList.add('hidden');
+            pauseIcon.classList.add('hidden');
+            loadingIcon.classList.remove('hidden');
+            return;
+        }
+        playPauseBtn.disabled = false;
+        loadingIcon.classList.add('hidden');
+        playIcon.classList.toggle('hidden', state.isPlaying);
+        pauseIcon.classList.toggle('hidden', !state.isPlaying);
+        
+        const fromColor = state.isPlaying ? 'bg-blue-500' : 'bg-amber-500';
+        const toColor = state.isPlaying ? 'bg-amber-500' : 'bg-blue-500';
+        const fromHover = state.isPlaying ? 'hover:bg-blue-600' : 'hover:bg-amber-600';
+        const toHover = state.isPlaying ? 'hover:bg-amber-600' : 'hover:bg-blue-600';
+        
+        playPauseBtn.classList.replace(fromColor, toColor);
+        playPauseBtn.classList.replace(fromHover, toHover);
+    }
+    
+    function updateVolumeSliderFill(slider, value) {
+        const percent = Math.max(0, Math.min(100, value));
+        slider.style.setProperty('--value-percent', `${percent}%`);
+        slider.style.setProperty('--triangle-x', `${percent}%`);
+        slider.style.setProperty('--triangle-y', `${100 - percent}%`);
+    }
+
+    function updateMasterProgressFill() {
+        const percent = (masterProgress.value / masterProgress.max) * 100 || 0;
+        masterProgress.style.backgroundSize = `${percent}% 100%`;
+    }
+    
+    // --- Waveform ---
+    
+    /**
+     * Generates waveform data from an audio buffer.
+     * @param {AudioBuffer} audioBuffer - The decoded audio data.
+     * @returns {Array<{min: number, max: number}>}
      */
     function generateWaveformData(audioBuffer) {
-        const sampleInterval = 0.1;
-        const numberOfChannels = audioBuffer.numberOfChannels;
-        const channelsData = Array.from({ length: numberOfChannels }, (_, i) => audioBuffer.getChannelData(i));
-        const sampleRate = audioBuffer.sampleRate;
-        const samplesPerPoint = Math.floor(sampleRate * sampleInterval);
+        const sampleInterval = 0.1; // 10 points per second
+        const channelsData = Array.from({ length: audioBuffer.numberOfChannels }, (_, i) => audioBuffer.getChannelData(i));
+        const samplesPerPoint = Math.floor(audioBuffer.sampleRate * sampleInterval);
         const pointsCount = Math.floor(audioBuffer.duration / sampleInterval);
         const waveformPoints = [];
 
@@ -333,7 +697,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let max = -1.0;
 
             for (let j = start; j < end; j++) {
-                for (let channel = 0; channel < numberOfChannels; channel++) {
+                for (let channel = 0; channel < channelsData.length; channel++) {
                     const sample = channelsData[channel][j];
                     if (sample < min) min = sample;
                     if (sample > max) max = sample;
@@ -345,8 +709,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * @function drawWaveform
-     * @description 使用预先计算好的数据绘制单个音轨的波形图
+     * Renders the waveform for a given track using SVG.
+     * @param {Object} track - The track object.
      */
     function drawWaveform(track) {
         const { ui, waveformData } = track;
@@ -359,103 +723,130 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let pathData = `M 0 ${halfHeight}`;
         for (let i = 0; i < waveformData.length; i++) {
-            const point = waveformData[i];
-            const y1 = halfHeight - (point.max * halfHeight);
-            pathData += ` L ${i} ${y1}`;
+            pathData += ` L ${i} ${halfHeight - (waveformData[i].max * halfHeight)}`;
         }
         for (let i = waveformData.length - 1; i >= 0; i--) {
-            const point = waveformData[i];
-            const y2 = halfHeight - (point.min * halfHeight);
-            pathData += ` L ${i} ${y2}`;
+            pathData += ` L ${i} ${halfHeight - (waveformData[i].min * halfHeight)}`;
         }
         pathData += ' Z';
 
         const svgNS = "http://www.w3.org/2000/svg";
         const svg = document.createElementNS(svgNS, "svg");
-        svg.setAttribute('class', 'waveform-svg');
         svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
         svg.setAttribute('preserveAspectRatio', 'none');
 
         const path = document.createElementNS(svgNS, "path");
         path.setAttribute('d', pathData);
         path.setAttribute('fill', '#10B981');
-        path.setAttribute('stroke', 'none');
 
         const baseline = document.createElementNS(svgNS, "line");
         baseline.setAttribute('x1', '0');
-        baseline.setAttribute('y1', halfHeight.toString());
-        baseline.setAttribute('x2', width.toString());
-        baseline.setAttribute('y2', halfHeight.toString());
+        baseline.setAttribute('y1', String(halfHeight));
+        baseline.setAttribute('x2', String(width));
+        baseline.setAttribute('y2', String(halfHeight));
         baseline.setAttribute('class', 'waveform-baseline');
 
-        const progressLine = document.createElementNS(svgNS, "line");
-        progressLine.setAttribute('x1', '0');
-        progressLine.setAttribute('y1', '0');
-        progressLine.setAttribute('x2', '0');
-        progressLine.setAttribute('y2', height.toString());
-        progressLine.setAttribute('class', 'waveform-progress-line');
-        track.ui.progressLine = progressLine;
+        ui.progressLine = document.createElementNS(svgNS, "line");
+        ui.progressLine.setAttribute('x1', '0');
+        ui.progressLine.setAttribute('y1', '0');
+        ui.progressLine.setAttribute('x2', '0');
+        ui.progressLine.setAttribute('y2', String(height));
+        ui.progressLine.setAttribute('class', 'waveform-progress-line');
 
-        svg.appendChild(path);
-        svg.appendChild(baseline);
-        svg.appendChild(progressLine);
+        svg.append(path, baseline, ui.progressLine);
         container.innerHTML = '';
         container.appendChild(svg);
-
-        updateWaveformProgressLine(startOffset);
-
-        if (!container.dataset.hasClickListener) {
-            container.addEventListener('click', (e) => {
-                const rect = container.getBoundingClientRect();
-                const clickX = e.clientX - rect.left;
-                const seekTime = (clickX / rect.width) * minDuration;
-
-                if (isPlaying) {
-                    pause();
-                    startOffset = seekTime;
-                    play();
-                } else {
-                    startOffset = seekTime;
-                    masterProgress.value = seekTime;
-                    currentTimeDisplay.textContent = formatTime(seekTime);
-                    updateWaveformProgressLine(seekTime);
-                    updateMasterProgressFill(); // 新增：更新填充
-                }
-            });
-            container.dataset.hasClickListener = 'true';
-        }
+        
+        updateWaveformProgressLine(state.startOffset);
+    }
+    
+    /**
+     * Updates the position of the progress line on all waveforms.
+     * @param {number} currentTime - The current playback time.
+     */
+    function updateWaveformProgressLine(currentTime) {
+        state.tracks.forEach(track => {
+            if (!track.ui.progressLine || !track.waveformData || !track.audioBuffer) return;
+            
+            const trackDuration = track.audioBuffer.duration;
+            const progressPercent = Math.max(0, Math.min(1, currentTime / trackDuration));
+            const xPos = progressPercent * track.waveformData.length;
+            
+            track.ui.progressLine.setAttribute('transform', `translate(${xPos}, 0)`);
+            track.ui.progressLine.style.display = (currentTime >= trackDuration) ? 'none' : 'block';
+        });
     }
 
-    /**
-     * @function initializeResizeObserver
-     * @description 监听波形图容器尺寸变化并重绘
-     */
     function initializeResizeObserver() {
-        if (resizeObserver) resizeObserver.disconnect();
-
-        resizeObserver = new ResizeObserver(() => {
+        if (state.resizeObserver) state.resizeObserver.disconnect();
+        state.resizeObserver = new ResizeObserver(() => {
             requestAnimationFrame(() => {
-                const currentTime = startOffset + (isPlaying ? (audioContext.currentTime - startTime) : 0);
+                const currentTime = state.startOffset + (state.isPlaying ? (state.audioContext.currentTime - state.startTime) : 0);
                 updateWaveformProgressLine(currentTime);
             });
         });
-
-        tracks.forEach(track => {
+        state.tracks.forEach(track => {
             if (track.ui.waveformContainer) {
-                resizeObserver.observe(track.ui.waveformContainer);
+                state.resizeObserver.observe(track.ui.waveformContainer);
             }
         });
     }
+    
+    // --- Tooltips ---
+
+    function showTooltip(ui) { ui.tooltip.style.opacity = '1'; updateTooltip(ui); }
+    function hideTooltip(ui) { ui.tooltip.style.opacity = '0'; }
+    function updateTooltip(ui) {
+        const slider = ui.volumeSlider;
+        const value = slider.value;
+        ui.tooltip.textContent = `${value}%`;
+        
+        const thumbWidth = 20;
+        const trackWidth = slider.parentElement.offsetWidth;
+        const percent = value / 100;
+        let thumbPosition = percent * (trackWidth - thumbWidth) + (thumbWidth / 2);
+        
+        // Center tooltip over thumb
+        const tooltipWidth = ui.tooltip.offsetWidth;
+        thumbPosition = Math.max(tooltipWidth / 2, Math.min(thumbPosition, trackWidth - tooltipWidth / 2));
+        ui.tooltip.style.left = `${thumbPosition}px`;
+    }
+
+    function showProgressTooltip() {
+        progressTooltip.style.opacity = '1';
+        updateProgressTooltip();
+    }
+    function hideProgressTooltip() { progressTooltip.style.opacity = '0'; }
+    function updateProgressTooltip() {
+        if (!progressTooltip) return;
+        const val = masterProgress.value;
+        progressTooltip.textContent = formatTime(val);
+
+        const trackWidth = masterProgress.offsetWidth;
+        const thumbWidth = 16;
+        const percent = val / masterProgress.max;
+        
+        // Center tooltip over thumb
+        let thumbPosition = percent * (trackWidth - thumbWidth) + (thumbWidth / 2);
+        const tooltipWidth = progressTooltip.offsetWidth;
+        const left = Math.max(0, thumbPosition - tooltipWidth / 2);
+        
+        progressTooltip.style.left = `${Math.min(left, trackWidth - tooltipWidth)}px`;
+    }
+
+    // --- Utilities ---
 
     /**
-     * @function calculateTotalSize
-     * @description 使用 HEAD 请求获取所有音频文件的总大小并更新UI
+     * Calculates the total size of all tracks for a given file extension.
+     * @param {string} extension - The file extension (e.g., 'ogg', 'm4a').
+     * @param {HTMLElement} spanElement - The element to display the size in.
+     * @returns {Promise<number>} - The total size in bytes.
      */
     async function calculateTotalSize(extension, spanElement) {
         let totalBytes = 0;
         try {
-            const promises = tracksData.map(track => {
-                const url = `${track.folder}/${track.baseName}.${extension}`;
+            const promises = state.currentSong.tracksData.map(track => {
+                const url = `${state.currentSong.folder}/${track.file}.${extension}`;
                 return fetch(url, { method: 'HEAD' });
             });
             const results = await Promise.allSettled(promises);
@@ -465,351 +856,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (size) totalBytes += parseInt(size, 10);
                 }
             }
-            if (totalBytes > 0) {
-                const totalMB = (totalBytes / (1024 * 1024)).toFixed(1);
-                spanElement.textContent = `(${totalMB}MB)`;
-            } else {
-                spanElement.textContent = `(未知大小)`;
-            }
+            spanElement.textContent = totalBytes > 0 ? `(${(totalBytes / 1024 / 1024).toFixed(1)}MB)` : `(未知大小)`;
         } catch (error) {
-            console.warn(`无法获取 ${extension} 文件总大小：`, error);
+            console.warn(`Could not get total size for ${extension}:`, error);
             spanElement.textContent = `(获取失败)`;
         }
         return totalBytes;
     }
-
+    
     /**
-     * @function startLoading
-     * @description 用户选择质量后开始加载流程
+     * Formats seconds into a MM:SS string.
+     * @param {number} seconds - The time in seconds.
+     * @returns {string} - The formatted time string.
      */
-    function startLoading(quality) {
-        qualitySelectionContainer.classList.add('hidden');
-        mainPlayerControls.classList.remove('hidden');
-        const extension = quality === 'hq' ? 'ogg' : 'm4a';
-        tracks.forEach(track => {
-            track.file = `${track.folder}/${track.baseName}.${extension}`;
-        });
-        totalDownloadSize = (quality === 'hq') ? storedHqBytes : storedLqBytes;
-        initializeAudio();
-    }
-
-    /**
-     * @function play
-     * @description 开始或继续播放所有音轨
-     */
-    function play() {
-        if (isPlaying) return;
-        if (audioContext.state === 'suspended') {
-            audioContext.resume();
-        }
-        if (startOffset >= minDuration) startOffset = 0;
-
-        tracks.forEach(track => {
-            const source = audioContext.createBufferSource();
-            source.buffer = track.audioBuffer;
-            source.connect(track.gainNode);
-            source.start(0, startOffset);
-            track.sourceNode = source;
-        });
-
-        isPlaying = true;
-        startTime = audioContext.currentTime;
-        updateAllTrackVolumes();
-        updatePlayPauseButton();
-        animationFrameId = requestAnimationFrame(updateProgress);
-    }
-    /**
-     * @function pause
-     * @description 暂停播放所有音轨
-     */
-    function pause() {
-        if (!isPlaying) return;
-        const elapsed = audioContext.currentTime - startTime;
-        cancelAnimationFrame(animationFrameId);
-
-        tracks.forEach(track => {
-            if (track.sourceNode) {
-                try {
-                    track.sourceNode.stop(0);
-                    track.sourceNode.disconnect();
-                } catch (e) { /* 已经停止则忽略 */ }
-                track.sourceNode = null;
-            }
-        });
-
-        isPlaying = false;
-        startOffset += elapsed;
-        updatePlayPauseButton();
-    }
-    /**
-     * @function togglePlayPause
-     * @description 切换播放/暂停状态
-     */
-    function togglePlayPause() { if (isPlaying) pause(); else play(); }
-
-    /**
-     * @function seek
-     * @description 跳转到指定时间点
-     */
-    function seek() {
-        const seekTime = parseFloat(masterProgress.value);
-        if (isPlaying) {
-            pause();
-            startOffset = seekTime;
-            play();
-        } else {
-            startOffset = seekTime;
-            currentTimeDisplay.textContent = formatTime(seekTime);
-            updateWaveformProgressLine(seekTime);
-            updateMasterProgressFill(); // 新增：更新填充
-        }
-    }
-
-    /**
-     * @function updateLevelMeters
-     * @description 更新所有音轨的实时音频电平表
-     */
-    function updateLevelMeters() {
-        const MIN_DB = -60.0;
-
-        tracks.forEach(track => {
-            const meterBar = track.ui.meterBar;
-            if (!track.analyserNode || !meterBar) return;
-            track.analyserNode.getFloatTimeDomainData(track.timeDomainData);
-            let peakAmplitude = 0.0;
-            for (const sample of track.timeDomainData) {
-                const absSample = Math.abs(sample);
-                if (absSample > peakAmplitude) peakAmplitude = absSample;
-            }
-            if (peakAmplitude === 0) {
-                meterBar.style.height = '0%';
-                return;
-            }
-            const peakDb = 20 * Math.log10(peakAmplitude);
-            let levelPercent = peakDb < MIN_DB ? 0 : ((((peakDb - MIN_DB) / (0 - MIN_DB)) ** 2) * 100) | 0;
-            const finalPercent = Math.min(100, Math.max(0, levelPercent));
-            meterBar.style.height = `${finalPercent}%`;
-            meterBar.style.backgroundColor = `rgb(0, 201, 81)`;
-        });
-    }
-
-
-    /**
-     * @function updateProgress
-     * @description 使用 requestAnimationFrame 循环更新主进度条和时间显示
-     */
-    function updateProgress() {
-        if (!isPlaying) {
-            cancelAnimationFrame(animationFrameId);
-            return;
-        };
-
-        const latency = audioContext.outputLatency || 0;
-        const newCurrentTime = startOffset + (audioContext.currentTime - startTime) - latency;
-
-        if (newCurrentTime >= minDuration) {
-            pause();
-            startOffset = minDuration;
-            masterProgress.value = minDuration;
-            currentTimeDisplay.textContent = formatTime(minDuration);
-            updateWaveformProgressLine(minDuration);
-            updateMasterProgressFill(); // 新增：更新填充
-        } else {
-            if (!isSeeking) {
-                masterProgress.value = newCurrentTime;
-                currentTimeDisplay.textContent = formatTime(newCurrentTime);
-                updateWaveformProgressLine(newCurrentTime);
-                updateMasterProgressFill(); // 新增：更新填充
-            }
-            animationFrameId = requestAnimationFrame(updateProgress);
-        }
-        updateLevelMeters();
-    }
-
-    /**
-     * @function updateWaveformProgressLine
-     * @description 更新所有波形图上的红色播放进度线
-     * @param {number} currentTime - 当前播放时间
-     */
-    function updateWaveformProgressLine(currentTime) {
-        tracks.forEach(track => {
-            if (track.ui.progressLine && track.waveformData && track.audioBuffer) {
-                const trackDuration = track.audioBuffer.duration;
-                const progressPercent = Math.max(0, Math.min(1, currentTime / trackDuration));
-                const xPos = progressPercent * track.waveformData.length;
-                track.ui.progressLine.setAttribute('transform', `translate(${xPos}, 0)`);
-
-                if (currentTime >= trackDuration) {
-                    track.ui.progressLine.style.display = 'none';
-                } else {
-                    track.ui.progressLine.style.display = 'block';
-                }
-            }
-        });
-    }
-
-    // --- Mute 和 Solo 逻辑 ---
-    /**
-     * @function handleMuteClick
-     * @description 处理静音按钮点击事件
-     */
-    function handleMuteClick(clickedTrack) {
-        clickedTrack.isMuted = !clickedTrack.isMuted;
-        clickedTrack.ui.muteBtn.classList.toggle('active', clickedTrack.isMuted);
-        updateAllTrackVolumes();
-    }
-
-    /**
-     * @function handleSoloClick
-     * @description 处理独奏按钮点击事件 (支持多轨独奏)
-     */
-    function handleSoloClick(clickedTrack) {
-        clickedTrack.isSoloed = !clickedTrack.isSoloed;
-        clickedTrack.ui.soloBtn.classList.toggle('active', clickedTrack.isSoloed);
-        isAnyTrackSoloed = tracks.some(track => track.isSoloed);
-        updateAllTrackVolumes();
-    }
-
-    /**
-     * @function updateAllTrackVolumes
-     * @description 根据所有轨道的 Mute 和 Solo 状态，集中更新实际音量
-     */
-    function updateAllTrackVolumes() {
-        if (!audioContext) return;
-
-        tracks.forEach(track => {
-            let finalVolume = 0;
-            if (isAnyTrackSoloed) {
-                // 如果有轨道被独奏
-                if (track.isSoloed && !track.isMuted) {
-                    finalVolume = track.lastVolume;
-                }
-            } else {
-                // 如果没有轨道被独奏
-                if (!track.isMuted) {
-                    finalVolume = track.lastVolume;
-                }
-            }
-            if (track.gainNode) {
-                track.gainNode.gain.setTargetAtTime(finalVolume, audioContext.currentTime, 0.01);
-            }
-        });
-    }
-
-    // --- 其他 UI 事件函数 ---
-    function bindUIEvents() {
-        playPauseBtn.addEventListener('click', togglePlayPause);
-
-        // --- 主进度条事件 ---
-        masterProgress.addEventListener('input', () => {
-            isSeeking = true;
-            updateMasterProgressFill();
-            showProgressTooltip();
-        });
-        masterProgress.addEventListener('change', () => {
-            isSeeking = false;
-            seek();
-            hideProgressTooltip();
-        });
-        masterProgress.addEventListener('mousedown', () => {
-            isSeeking = true;
-            showProgressTooltip();
-        });
-        masterProgress.addEventListener('mouseup', () => {
-            isSeeking = false;
-            hideProgressTooltip();
-        });
-        masterProgress.addEventListener('touchstart', () => {
-            isSeeking = true;
-            showProgressTooltip();
-        }, { passive: true });
-        masterProgress.addEventListener('touchend', () => {
-            isSeeking = false;
-            hideProgressTooltip();
-        });
-
-
-        tracks.forEach((track) => {
-            track.ui.volumeSlider.addEventListener('input', e => handleVolumeChange(e, track));
-            track.ui.volumeSlider.addEventListener('mousedown', () => showTooltip(track.ui));
-            track.ui.volumeSlider.addEventListener('touchstart', () => showTooltip(track.ui), { passive: true });
-            track.ui.volumeSlider.addEventListener('input', () => updateTooltip(track.ui));
-            track.ui.muteBtn.addEventListener('click', () => handleMuteClick(track));
-            track.ui.soloBtn.addEventListener('click', () => handleSoloClick(track));
-        });
-        const hideAllTooltips = () => { tracks.forEach(track => hideTooltip(track.ui)); };
-        document.addEventListener('mouseup', hideAllTooltips);
-        document.addEventListener('touchend', hideAllTooltips);
-    }
-
-    function handleVolumeChange(e, track) {
-        const value = parseFloat(e.target.value);
-        const volume = value / 100;
-        track.lastVolume = volume;
-        updateAllTrackVolumes();
-        updateVolumeSliderFill(track.ui.volumeSlider, value);
-    }
-
-    function updatePlayPauseButton() {
-        loadingIcon.classList.add('hidden');
-        playIcon.classList.toggle('hidden', isPlaying);
-        pauseIcon.classList.toggle('hidden', !isPlaying);
-        if (isPlaying) {
-            playPauseBtn.classList.replace('bg-blue-500', 'bg-amber-500');
-            playPauseBtn.classList.replace('hover:bg-blue-600', 'hover:bg-amber-600');
-        } else {
-            playPauseBtn.classList.replace('bg-amber-500', 'bg-blue-500');
-            playPauseBtn.classList.replace('hover:bg-amber-600', 'hover:bg-blue-600');
-        }
-    }
-
-    function updateVolumeSliderFill(slider, value) { 
-        // 更新CSS变量以驱动填充效果
-        slider.style.setProperty('--value-percent', `${value}%`);
-        // 计算三角形顶点
-        // 三角形底边：左下(0,100%)，右下(100%,100%)，右上(100%,0%)
-        // 填充三角形：左下(0,100%)，顶点(x,y)，右下(x,100%)
-        // x = value%，y = 100% - value%
-        const percent = Math.max(0, Math.min(100, value));
-        slider.style.setProperty('--triangle-x', `${percent}%`);
-        slider.style.setProperty('--triangle-y', `${100 - percent}%`);
-    }
-
-    // --- 新增/修改：主进度条相关函数 ---
-    function updateMasterProgressFill() {
-        const percent = (masterProgress.value / masterProgress.max) * 100;
-        masterProgress.style.backgroundSize = `${percent}% 100%`;
-    }
-
-    function showProgressTooltip() {
-        progressTooltip.style.opacity = '1';
-        updateProgressTooltip();
-    }
-
-    function updateProgressTooltip() {
-        if (!progressTooltip) return;
-        const val = masterProgress.value;
-        progressTooltip.textContent = formatTime(val);
-
-        const trackWidth = masterProgress.offsetWidth;
-        const thumbWidth = 16; // 与 CSS 中 #master-progress::-webkit-slider-thumb 的 width 一致
-        const percent = val / masterProgress.max;
-        let thumbPosition = percent * trackWidth;
-
-        // 微调以使提示框居中于滑块按钮
-        thumbPosition = percent * (trackWidth - thumbWidth) + (thumbWidth / 2);
-
-        // 确保提示框不会超出父容器边界
-        const tooltipWidth = progressTooltip.offsetWidth;
-        const left = Math.max(tooltipWidth / 2, Math.min(thumbPosition, trackWidth - tooltipWidth / 2));
-        progressTooltip.style.left = `${left - tooltipWidth / 2}px`;
-    }
-
-    function hideProgressTooltip() {
-        progressTooltip.style.opacity = '0';
-    }
-
-
     function formatTime(seconds) {
         const secs = Math.floor(seconds);
         const minutes = Math.floor(secs / 60);
@@ -817,31 +876,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
     }
 
-    function showTooltip(ui) { ui.tooltip.style.opacity = '1'; updateTooltip(ui); }
-
-    function updateTooltip(ui) {
-        const slider = ui.volumeSlider;
-        const value = slider.value;
-        ui.tooltip.textContent = `${value}%`;
-        const thumbWidth = 20;
-        const trackWidth = slider.parentElement.offsetWidth;
-        const percent = value / 100;
-        let thumbPosition = percent * (trackWidth - thumbWidth) + (thumbWidth / 2);
-        thumbPosition = Math.max(ui.tooltip.offsetWidth / 2, Math.min(thumbPosition, trackWidth - ui.tooltip.offsetWidth / 2));
-        ui.tooltip.style.left = `${thumbPosition}px`;
-    }
-
-    function hideTooltip(ui) { ui.tooltip.style.opacity = '0'; }
-
-    // --- 初始化执行 ---
-    function initialize() {
-        qualitySelectionContainer.classList.add('hidden');
-        mainPlayerControls.classList.add('hidden');
-        mixerTracksContainer.innerHTML = '';
-        loadSongsList();
-        loadHqBtn.addEventListener('click', () => startLoading('hq'));
-        loadLqBtn.addEventListener('click', () => startLoading('lq'));
-    }
-
+    // --- Start the App ---
     initialize();
 });
