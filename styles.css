@@ -91,7 +91,7 @@ input[type="range"]::-moz-range-thumb:hover {
 
 /* --- 波形图样式 --- */
 .waveform-container {
-    margin-top: 12px;
+    margin-top: 0px; /* 从 12px 改为 0px */
     height: 60px;
     background-color: #f3f4f6;
     border-radius: 8px;
@@ -126,41 +126,77 @@ input[type="range"]::-moz-range-thumb:hover {
 
 /* --- 独奏和静音按钮样式 --- */
 .control-button {
-    width: auto; /* 修改 */
-    padding-left: 8px; /* 修改 */
-    padding-right: 8px; /* 修改 */
+    width: auto;
+    /* 修改 */
+    padding-left: 8px;
+    /* 修改 */
+    padding-right: 8px;
+    /* 修改 */
     height: 28px;
     border-radius: 6px;
     font-weight: bold;
-    font-size: 13px; /* 微调字体大小以适应 */
+    font-size: 13px;
+    /* 微调字体大小以适应 */
     cursor: pointer;
     transition: background-color 0.2s, color 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid #d1d5db; /* 边框 */
+    border: 1px solid #d1d5db;
+    /* 边框 */
 }
 
 /* 静音按钮样式 */
 .mute-button {
-    background-color: #f3f4f6; /* 默认背景 */
-    color: #4b5563; /* 默认文字颜色 */
+    background-color: #f3f4f6;
+    /* 默认背景 */
+    color: #4b5563;
+    /* 默认文字颜色 */
 }
 
 .mute-button.active {
-    background-color: #3b82f6; /* 激活时蓝色 */
+    background-color: #3b82f6;
+    /* 激活时蓝色 */
     color: white;
     border-color: #2563eb;
 }
 
 /* 独奏按钮样式 */
 .solo-button {
-    background-color: #f3f4f6; /* 默认背景 */
-    color: #4b5563; /* 默认文字颜色 */
+    background-color: #f3f4f6;
+    /* 默认背景 */
+    color: #4b5563;
+    /* 默认文字颜色 */
 }
 
 .solo-button.active {
-    background-color: #f59e0b; /* 激活时黄色 */
+    background-color: #f59e0b;
+    /* 激活时黄色 */
     color: white;
     border-color: #d97706;
+}
+
+/* --- 新增：垂直电平指示器样式 --- */
+.vertical-meter-wrapper {
+    width: 20px;
+    height: 60px;
+    /* 与波形图容器高度一致 */
+    background-color: #e5e7eb;
+    /* 轨道背景色 */
+    border-radius: 9999px;
+    /* 圆角 */
+    overflow: hidden;
+    display: flex;
+    /* 从底部开始填充 */
+    align-items: flex-end;
+}
+
+.vertical-meter-bar {
+    width: 100%;
+    height: 0%;
+    /* 初始高度为 0 */
+    background-color: #34d399;
+    /* 电平条颜色 (浅绿色) */
+    transition: height 0.1s ease-out;
+    /* 高度变化的过渡效果 */
 }

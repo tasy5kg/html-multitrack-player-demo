@@ -123,33 +123,17 @@ document.addEventListener('DOMContentLoaded', () => {
         tracksData.forEach((trackData) => {
             const trackElement = document.createElement('div');
             trackElement.className = 'py-4';
-            const labelContainer = document.createElement('div');
-            labelContainer.className = 'flex items-center justify-between';
+
+            // --- 上方部分: 轨道名, 音量滑块, 独奏/静音按钮 ---
+            const topRow = document.createElement('div');
+            topRow.className = 'flex items-center justify-between space-x-4 mb-2';
+
             const label = document.createElement('label');
             label.textContent = trackData.name;
-            label.className = 'text-sm font-bold text-gray-700';
+            label.className = 'text-sm font-bold text-gray-700 w-28 truncate'; // 固定宽度并截断长文本
 
-            const soloMuteContainer = document.createElement('div');
-            soloMuteContainer.className = 'flex items-center space-x-2';
-
-            const muteBtn = document.createElement('button');
-            muteBtn.textContent = '静音'; // 修改
-            muteBtn.className = 'control-button mute-button';
-
-            const soloBtn = document.createElement('button');
-            soloBtn.textContent = '独奏'; // 修改
-            soloBtn.className = 'control-button solo-button';
-
-            soloMuteContainer.appendChild(muteBtn);
-            soloMuteContainer.appendChild(soloBtn);
-
-            labelContainer.appendChild(label);
-            labelContainer.appendChild(soloMuteContainer);
-
-            const controlsContainer = document.createElement('div');
-            controlsContainer.className = 'flex items-center space-x-2 mt-2';
             const sliderWrapper = document.createElement('div');
-            sliderWrapper.className = 'relative w-3/4 h-[20px] flex items-center';
+            sliderWrapper.className = 'relative flex-grow h-[20px] flex items-center';
             const volumeSlider = document.createElement('input');
             volumeSlider.type = 'range';
             volumeSlider.min = 0;
@@ -161,25 +145,47 @@ document.addEventListener('DOMContentLoaded', () => {
             volumeTooltip.textContent = `${trackData.defaultVolume}%`;
             sliderWrapper.appendChild(volumeSlider);
             sliderWrapper.appendChild(volumeTooltip);
-            const meterWrapper = document.createElement('div');
-            meterWrapper.className = 'w-1/4 h-[20px] flex items-center';
-            const meterContainer = document.createElement('div');
-            meterContainer.className = 'w-full h-2 bg-gray-200 rounded-full overflow-hidden';
-            const meterBar = document.createElement('div');
-            meterBar.className = 'h-full rounded-full bg-green-500 transition-width duration-100 ease-out';
-            meterBar.style.width = '0%';
-            meterContainer.appendChild(meterBar);
-            meterWrapper.appendChild(meterContainer);
-            controlsContainer.appendChild(sliderWrapper);
-            controlsContainer.appendChild(meterWrapper);
+
+            const soloMuteContainer = document.createElement('div');
+            soloMuteContainer.className = 'flex items-center space-x-2 flex-shrink-0';
+
+            const muteBtn = document.createElement('button');
+            muteBtn.textContent = '静音';
+            muteBtn.className = 'control-button mute-button';
+
+            const soloBtn = document.createElement('button');
+            soloBtn.textContent = '独奏';
+            soloBtn.className = 'control-button solo-button';
+
+            soloMuteContainer.appendChild(muteBtn);
+            soloMuteContainer.appendChild(soloBtn);
+
+            topRow.appendChild(label);
+            topRow.appendChild(sliderWrapper);
+            topRow.appendChild(soloMuteContainer);
+
+            // --- 下方部分: 波形图和垂直电平指示器 ---
+            const bottomRow = document.createElement('div');
+            bottomRow.className = 'flex items-center space-x-2';
 
             const waveformContainer = document.createElement('div');
-            waveformContainer.className = 'waveform-container';
+            waveformContainer.className = 'waveform-container flex-grow'; // 使用 flex-grow 占据剩余空间
 
-            trackElement.appendChild(labelContainer);
-            trackElement.appendChild(controlsContainer);
-            trackElement.appendChild(waveformContainer);
+            const meterWrapper = document.createElement('div');
+            // 使用新的 'vertical-meter-wrapper' class
+            meterWrapper.className = 'vertical-meter-wrapper';
+            const meterBar = document.createElement('div');
+            // 使用新的 'vertical-meter-bar' class
+            meterBar.className = 'vertical-meter-bar';
+            meterWrapper.appendChild(meterBar);
+
+            bottomRow.appendChild(waveformContainer);
+            bottomRow.appendChild(meterWrapper);
+
+            trackElement.appendChild(topRow);
+            trackElement.appendChild(bottomRow);
             mixerTracksContainer.appendChild(trackElement);
+
 
             const isMetronome = trackData.name === '节拍器';
 
@@ -568,12 +574,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (absSample > peakAmplitude) peakAmplitude = absSample;
             }
             if (peakAmplitude === 0) {
-                meterBar.style.width = '0%';
+                meterBar.style.height = '0%'; // 修改: 从 width 改为 height
                 return;
             }
             const peakDb = 20 * Math.log10(peakAmplitude);
             let levelPercent = peakDb < MIN_DB ? 0 : ((((peakDb - MIN_DB) / (0 - MIN_DB)) ** 2) * 100) | 0;
-            meterBar.style.width = `${Math.min(100, Math.max(0, levelPercent))}%`;
+            meterBar.style.height = `${Math.min(100, Math.max(0, levelPercent))}%`; // 修改: 从 width 改为 height
         });
     }
 
