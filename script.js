@@ -1,15 +1,6 @@
 // 等待 DOM 内容完全加载后执行脚本
 document.addEventListener('DOMContentLoaded', () => {
-    // --- 音轨数据定义 ---
-    const tracksData = [
-        { name: '人声', baseName: '人声', defaultVolume: 75 },
-        { name: '吉他', baseName: '吉他', defaultVolume: 75 },
-        { name: '鼓、贝斯', baseName: '鼓、贝斯', defaultVolume: 75 },
-        { name: '键盘、管弦乐', baseName: '键盘、管弦乐', defaultVolume: 75 },
-        { name: '节拍器', baseName: '节拍器', defaultVolume: 0 } // 节拍器默认静音
-    ];
-
-    // --- 获取 DOM 元素 ---
+    // --- DOM 元素 ---
     const mixerTracksContainer = document.getElementById('mixer-tracks');
     const playPauseBtn = document.getElementById('play-pause-btn');
     const loadingIcon = document.getElementById('loading-icon');
@@ -29,21 +20,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadLqBtn = document.getElementById('load-lq-btn');
     const hqSizeSpan = document.getElementById('hq-size');
     const lqSizeSpan = document.getElementById('lq-size');
+    const songSelect = document.getElementById('song-select');
+    const songSelectionContainer = document.getElementById('song-selection-container');
 
-
-    // --- 全局状态变量 ---
-    let audioContext; // Web Audio API 的核心对象
-    let tracks = []; // 存储所有音轨信息和其对应的 Web Audio 节点
-    let isInitialized = false; // 音频是否已初始化
-    let isPlaying = false; // 当前是否正在播放
-    let isSeeking = false; // 用户是否正在拖动主进度条
-    let startTime = 0; // 上次开始播放时的时间戳 (来自 audioContext.currentTime)
-    let startOffset = 0; // 播放的起始偏移量（秒），用于暂停和继续播放
-    let minDuration = Infinity; // 所有音轨中最短的时长，作为播放器的总时长
-    let animationFrameId; // requestAnimationFrame 的 ID，用于更新进度
-    let totalDownloadSize = 0; // 所有音频文件的总大小（字节）
+    // --- 全局状态 ---
+    let audioContext;
+    let tracks = [];
+    let isInitialized = false;
+    let isPlaying = false;
+    let isSeeking = false;
+    let startTime = 0;
+    let startOffset = 0;
+    let minDuration = Infinity;
+    let animationFrameId;
+    let totalDownloadSize = 0;
     let storedHqBytes = 0;
     let storedLqBytes = 0;
+    let songsList = [];
+    let currentSong = null;
+    let tracksData = [];
 
     // --- SVG 图标 ---
     const ICONS = {
@@ -51,11 +46,58 @@ document.addEventListener('DOMContentLoaded', () => {
         muted: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="text-red-500"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"></path></svg>`
     };
 
-    /**
-     * @function setupUI
-     * @description 根据 tracksData 动态创建所有音轨的 UI 元素（标签、滑块、电平表等）
-     */
+    // --- 歌曲选择相关 ---
+    async function loadSongsList() {
+        try {
+            const res = await fetch('songs.json');
+            songsList = await res.json();
+            songSelect.innerHTML = '<option value="" selected disabled>请选择</option>';
+            songsList.forEach((song, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx;
+                opt.textContent = song.name;
+                songSelect.appendChild(opt);
+            });
+        } catch (e) {
+            songSelect.innerHTML = '<option value="">加载失败</option>';
+        }
+    }
+
+    songSelect.addEventListener('change', () => {
+        const idx = songSelect.value;
+        if (songsList[idx]) {
+            currentSong = songsList[idx];
+            tracksData = currentSong.tracksData.map(track => ({
+                name: track.name,
+                baseName: track.file,
+                defaultVolume: track.name === '节拍器' ? 0 : 75,
+                folder: currentSong.folder
+            }));
+            qualitySelectionContainer.classList.remove('hidden');
+            mainPlayerControls.classList.add('hidden');
+            mixerTracksContainer.innerHTML = '';
+            isInitialized = false;
+            tracks = [];
+            hqSizeSpan.textContent = '（计算中…）';
+            lqSizeSpan.textContent = '（计算中…）';
+            [storedHqBytes, storedLqBytes] = [0, 0];
+            (async () => {
+                [storedHqBytes, storedLqBytes] = await Promise.all([
+                    calculateTotalSize('ogg', hqSizeSpan),
+                    calculateTotalSize('m4a', lqSizeSpan)
+                ]);
+                loadHqBtn.disabled = false;
+                loadLqBtn.disabled = false;
+            })();
+            setupUI();
+            bindUIEvents();
+        }
+    });
+
+    // --- 动态生成音轨 UI ---
     function setupUI() {
+        mixerTracksContainer.innerHTML = '';
+        tracks = [];
         tracksData.forEach((trackData) => {
             const trackElement = document.createElement('div');
             trackElement.className = 'py-4';
@@ -201,18 +243,16 @@ document.addEventListener('DOMContentLoaded', () => {
         let totalBytes = 0;
         try {
             const promises = tracksData.map(track => {
-                const url = `${track.baseName}.${extension}`;
+                const url = `${track.folder}/${track.baseName}.${extension}`;
                 return fetch(url, { method: 'HEAD' });
             });
             const results = await Promise.allSettled(promises);
-
             for (const result of results) {
                 if (result.status === 'fulfilled' && result.value.ok) {
                     const size = result.value.headers.get('content-length');
                     if (size) totalBytes += parseInt(size, 10);
                 }
             }
-
             if (totalBytes > 0) {
                 const totalMB = (totalBytes / (1024 * 1024)).toFixed(1);
                 spanElement.textContent = `（${totalMB}MB）`;
@@ -234,13 +274,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function startLoading(quality) {
         qualitySelectionContainer.classList.add('hidden');
         mainPlayerControls.classList.remove('hidden');
-
         const extension = quality === 'hq' ? 'ogg' : 'm4a';
         tracks.forEach(track => {
-            track.file = `${track.baseName}.${extension}`;
+            track.file = `${track.folder}/${track.baseName}.${extension}`;
         });
         totalDownloadSize = (quality === 'hq') ? storedHqBytes : storedLqBytes;
-
         initializeAudio();
     }
 
@@ -481,27 +519,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 初始化执行 ---
     function initialize() {
-        setupUI(); // 创建 UI 骨架
-        bindUIEvents(); // 绑定所有可能用到的事件
-        mixerTracksContainer.classList.add('opacity-50', 'pointer-events-none');
-        tracks.forEach(track => {
-            updateVolumeSliderFill(track.ui.volumeSlider, track.ui.volumeSlider.value);
-            updateMuteVisuals(track);
-        });
-
-        // 异步计算文件大小并设置按钮
-        (async () => {
-            hqSizeSpan.textContent = '（计算中…）';
-            lqSizeSpan.textContent = '（计算中…）';
-            [storedHqBytes, storedLqBytes] = await Promise.all([
-                calculateTotalSize('ogg', hqSizeSpan),
-                calculateTotalSize('m4a', lqSizeSpan)
-            ]);
-            loadHqBtn.disabled = false;
-            loadLqBtn.disabled = false;
-        })();
-
-        // 绑定质量选择按钮的点击事件
+        // 初始只显示歌曲选择
+        qualitySelectionContainer.classList.add('hidden');
+        mainPlayerControls.classList.add('hidden');
+        mixerTracksContainer.innerHTML = '';
+        loadSongsList();
         loadHqBtn.addEventListener('click', () => startLoading('hq'));
         loadLqBtn.addEventListener('click', () => startLoading('lq'));
     }

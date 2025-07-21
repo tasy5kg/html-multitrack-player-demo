@@ -21,7 +21,13 @@
         </div>
 
         <div class="px-6 py-6 min-h-[110px]">
-            <div id="quality-selection-container" class="text-center">
+            <div id="song-selection-container" class="text-center mb-4">
+                <label for="song-select" class="text-sm text-gray-600 mb-2 block">请选择歌曲</label>
+                <select id="song-select" class="px-3 py-2 border rounded-lg text-sm w-full max-w-xs mx-auto">
+                    <option value="" selected disabled>请选择</option>
+                </select>
+            </div>
+            <div id="quality-selection-container" class="text-center hidden">
                 <p class="text-sm text-gray-600 mb-4">请选择要加载的音频资源版本</p>
                 <div class="flex justify-center space-x-4">
                     <button id="load-hq-btn" disabled

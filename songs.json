@@ -1,0 +1,13 @@
+[
+  {
+    "name": "李佳薇 - 天后 (Live)",
+    "folder": "李佳薇 - 天后 (Live)",
+    "tracksData": [
+      {"name": "人声", "file": "人声", "formats": ["m4a", "ogg"]},
+      {"name": "吉他", "file": "吉他", "formats": ["m4a", "ogg"]},
+      {"name": "鼓、贝斯", "file": "鼓、贝斯", "formats": ["m4a", "ogg"]},
+      {"name": "键盘、管弦乐", "file": "键盘、管弦乐", "formats": ["m4a", "ogg"]},
+      {"name": "节拍器", "file": "节拍器", "formats": ["m4a", "ogg"]}
+    ]
+  }
+]
