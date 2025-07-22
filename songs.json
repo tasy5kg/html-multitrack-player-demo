@@ -1,59 +1,8 @@
 [
   {
-    "name": "GALA - 你",
-    "folder": "7dd28058",
-    "bpm":75,
-    "song_key":"Ab",
-    "tracksData": [
-      {"name": "主唱", "file": "主唱"},
-      {"name": "伴唱", "file": "伴唱"},
-      {"name": "原声吉他", "file": "原声吉他"},
-      {"name": "电吉他", "file": "电吉他"},
-      {"name": "贝斯", "file": "贝斯"},
-      {"name": "打击乐", "file": "打击乐"},
-      {"name": "钢琴", "file": "钢琴"},
-      {"name": "其它", "file": "其它"},
-      {"name": "节拍器", "file": "节拍器"}
-    ]
-  },
-  {
-    "name": "Michael Learns To Rock - Take Me To Your Heart",
-    "folder": "f5d2a100",
-    "bpm":122,
-    "song_key":"Gb",
-    "tracksData": [
-      {"name": "主唱", "file": "主唱"},
-      {"name": "伴唱", "file": "伴唱"},
-      {"name": "主音吉他", "file": "主音吉他"},
-      {"name": "节奏吉他", "file": "节奏吉他"},
-      {"name": "贝斯", "file": "贝斯"},
-      {"name": "打击乐", "file": "打击乐"},
-      {"name": "钢琴", "file": "钢琴"},
-      {"name": "弦乐", "file": "弦乐"},
-      {"name": "节拍器", "file": "节拍器"}
-    ]
-  },
-  {
-    "name": "陈雪凝 - 回忆见",
-    "folder": "b135179c",
-    "bpm":85,
-    "song_key":"Eb",
-    "tracksData": [
-      {"name": "主唱", "file": "主唱"},
-      {"name": "伴唱", "file": "伴唱"},
-      {"name": "原声吉他", "file": "原声吉他"},
-      {"name": "电吉他", "file": "电吉他"},
-      {"name": "贝斯", "file": "贝斯"},
-      {"name": "打击乐", "file": "打击乐"},
-      {"name": "钢琴", "file": "钢琴"},
-      {"name": "其它", "file": "其它"},
-      {"name": "节拍器", "file": "节拍器"}
-    ]
-  },
-  {
-    "name": "红激 - 爱的布鲁斯",
-    "folder": "16563936",
-    "bpm":135,
+    "name": "爱的布鲁斯 - 红激",
+    "folder": "e589124e",
+    "bpm": 135,
     "song_key":"G",
     "tracksData": [
       {"name": "人声", "file": "人声"},
@@ -69,23 +18,10 @@
     ]
   },
   {
-    "name": "李佳薇 - 天后 (Live)",
-    "folder": "4b232ccd",
-    "bpm":81,
-    "song_key":"Gb",
-    "tracksData": [
-      {"name": "人声", "file": "人声"},
-      {"name": "吉他", "file": "吉他"},
-      {"name": "贝斯、打击乐", "file": "贝斯、打击乐"},
-      {"name": "键盘、管弦乐", "file": "键盘、管弦乐"},
-      {"name": "节拍器", "file": "节拍器"}
-    ]
-  },
-  {
-    "name": "盘尼西林乐队 - New Boy (Live)",
-    "folder": "f052a7ef",
-    "bpm":126,
-    "song_key":"D",
+    "name": "回忆见 - 陈雪凝",
+    "folder": "acd362a1",
+    "bpm": 85,
+    "song_key":"Eb",
     "tracksData": [
       {"name": "主唱", "file": "主唱"},
       {"name": "伴唱", "file": "伴唱"},
@@ -93,14 +29,32 @@
       {"name": "电吉他", "file": "电吉他"},
       {"name": "贝斯", "file": "贝斯"},
       {"name": "打击乐", "file": "打击乐"},
+      {"name": "钢琴", "file": "钢琴"},
       {"name": "其它", "file": "其它"},
       {"name": "节拍器", "file": "节拍器"}
     ]
   },
   {
-    "name": "王者荣耀 - 霓裳风华",
-    "folder": "7b9f5ebe",
-    "bpm":70,
+    "name": "你 - GALA",
+    "folder": "5127f337",
+    "bpm": 75,
+    "song_key":"Ab",
+    "tracksData": [
+      {"name": "主唱", "file": "主唱"},
+      {"name": "伴唱", "file": "伴唱"},
+      {"name": "原声吉他", "file": "原声吉他"},
+      {"name": "电吉他", "file": "电吉他"},
+      {"name": "贝斯", "file": "贝斯"},
+      {"name": "打击乐", "file": "打击乐"},
+      {"name": "钢琴", "file": "钢琴"},
+      {"name": "其它", "file": "其它"},
+      {"name": "节拍器", "file": "节拍器"}
+    ]
+  },
+  {
+    "name": "霓裳风华 - 王者荣耀",
+    "folder": "8f9c4dfe",
+    "bpm": 70,
     "song_key":"Bm",
     "tracksData": [
       {"name": "琵琶", "file": "琵琶"},
@@ -112,9 +66,38 @@
     ]
   },
   {
-    "name": "赵阳光 - 雨下晚风 (心华Vocaloid)",
-    "folder": "601ccd89",
-    "bpm":88,
+    "name": "晴天 - 周杰伦",
+    "folder": "b90025b2",
+    "bpm": 68,
+    "song_key":"G",
+    "tracksData": [
+      {"name": "主唱", "file": "主唱"},
+      {"name": "伴唱", "file": "伴唱"},
+      {"name": "原声吉他", "file": "原声吉他"},
+      {"name": "电吉他", "file": "电吉他"},
+      {"name": "贝斯", "file": "贝斯"},
+      {"name": "打击乐", "file": "打击乐"},
+      {"name": "管乐", "file": "管乐"},
+      {"name": "节拍器", "file": "节拍器"}
+    ]
+  },
+  {
+    "name": "天后 (Live) - 李佳薇",
+    "folder": "eabaed21",
+    "bpm": 81,
+    "song_key":"Gb",
+    "tracksData": [
+      {"name": "人声", "file": "人声"},
+      {"name": "吉他", "file": "吉他"},
+      {"name": "贝斯、打击乐", "file": "贝斯、打击乐"},
+      {"name": "键盘、管弦乐", "file": "键盘、管弦乐"},
+      {"name": "节拍器", "file": "节拍器"}
+    ]
+  },
+  {
+    "name": "雨下晚风 (心华Vocaloid) - 赵阳光",
+    "folder": "83f205c5",
+    "bpm": 88,
     "song_key":"E",
     "tracksData": [
       {"name": "主唱", "file": "主唱"},
@@ -128,10 +111,10 @@
     ]
   },
   {
-    "name": "周杰伦 - 晴天",
-    "folder": "d2a86c08",
-    "bpm":68,
-    "song_key":"G",
+    "name": "New Boy (Live) - 盘尼西林乐队",
+    "folder": "ff9df1f0",
+    "bpm": 126,
+    "song_key":"D",
     "tracksData": [
       {"name": "主唱", "file": "主唱"},
       {"name": "伴唱", "file": "伴唱"},
@@ -139,7 +122,24 @@
       {"name": "电吉他", "file": "电吉他"},
       {"name": "贝斯", "file": "贝斯"},
       {"name": "打击乐", "file": "打击乐"},
-      {"name": "管乐", "file": "管乐"},
+      {"name": "其它", "file": "其它"},
+      {"name": "节拍器", "file": "节拍器"}
+    ]
+  },
+  {
+    "name": "Take Me To Your Heart - Michael Learns To Rock",
+    "folder": "6d199b53",
+    "bpm": 122,
+    "song_key":"Gb",
+    "tracksData": [
+      {"name": "主唱", "file": "主唱"},
+      {"name": "伴唱", "file": "伴唱"},
+      {"name": "主音吉他", "file": "主音吉他"},
+      {"name": "节奏吉他", "file": "节奏吉他"},
+      {"name": "贝斯", "file": "贝斯"},
+      {"name": "打击乐", "file": "打击乐"},
+      {"name": "钢琴", "file": "钢琴"},
+      {"name": "弦乐", "file": "弦乐"},
       {"name": "节拍器", "file": "节拍器"}
     ]
   }
