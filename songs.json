@@ -18,6 +18,24 @@
     ]
   },
   {
+    "name": "第一滴泪 - 大鹏",
+    "folder": "dfd45745",
+    "bpm": 64,
+    "song_key":"B",
+    "tracksData": [
+      {"name": "主唱", "file": "主唱.ogg"},
+      {"name": "伴唱", "file": "伴唱.ogg"},
+      {"name": "主音吉他", "file": "主音吉他.ogg"},
+      {"name": "节奏吉他", "file": "节奏吉他.ogg"},
+      {"name": "贝斯", "file": "贝斯.ogg"},
+      {"name": "打击乐", "file": "打击乐.ogg"},
+      {"name": "钢琴", "file": "钢琴.ogg"},
+      {"name": "键盘、管乐", "file": "键盘、管乐.ogg"},
+      {"name": "弦乐", "file": "弦乐.ogg"},
+      {"name": "节拍器", "file": "节拍器.ogg"}
+    ]
+  },
+  {
     "name": "回忆见 - 陈雪凝",
     "folder": "acd362a1",
     "bpm": 85,
@@ -87,10 +105,16 @@
     "bpm": 81,
     "song_key":"Gb",
     "tracksData": [
-      {"name": "人声", "file": "人声.ogg"},
-      {"name": "吉他", "file": "吉他.ogg"},
-      {"name": "贝斯、打击乐", "file": "贝斯、打击乐.ogg"},
-      {"name": "键盘、管弦乐", "file": "键盘、管弦乐.ogg"},
+      {"name": "主唱", "file": "主唱.ogg"},
+      {"name": "伴唱", "file": "伴唱.ogg"},
+      {"name": "主音吉他", "file": "主音吉他.ogg"},
+      {"name": "节奏吉他", "file": "节奏吉他.ogg"},
+      {"name": "贝斯", "file": "贝斯.ogg"},
+      {"name": "打击乐", "file": "打击乐.ogg"},
+      {"name": "钢琴", "file": "钢琴.ogg"},
+      {"name": "键盘", "file": "键盘.ogg"},
+      {"name": "管乐", "file": "管乐.ogg"},
+      {"name": "弦乐", "file": "弦乐.ogg"},
       {"name": "节拍器", "file": "节拍器.ogg"}
     ]
   },
