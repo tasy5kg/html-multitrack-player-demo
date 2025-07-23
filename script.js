@@ -114,15 +114,58 @@ document.addEventListener('DOMContentLoaded', () => {
             songSelect.blur();
             const songInfoDiv = document.getElementById('song-info');
             if (state.currentSong.bpm && state.currentSong.song_key) {
-                songInfoDiv.innerHTML = `BPM: ${state.currentSong.bpm}&nbsp;&nbsp;调式: ${state.currentSong.song_key}`;
+                songInfoDiv.innerHTML = `BPM: ${state.currentSong.bpm}&nbsp;&nbsp;调式: ${state.currentSong.song_key}&nbsp;&nbsp;<a href="#" id="view-lyrics-link" class="text-blue-500 hover:underline">查看歌词</a>`;
             } else if (state.currentSong.bpm) {
-                songInfoDiv.textContent = `BPM: ${state.currentSong.bpm}`;
+                songInfoDiv.innerHTML = `BPM: ${state.currentSong.bpm}&nbsp;&nbsp;<a href="#" id="view-lyrics-link" class="text-blue-500 hover:underline">查看歌词</a>`;
             } else if (state.currentSong.song_key) {
-                songInfoDiv.textContent = `调式: ${state.currentSong.song_key}`;
+                songInfoDiv.innerHTML = `调式: ${state.currentSong.song_key}&nbsp;&nbsp;<a href="#" id="view-lyrics-link" class="text-blue-500 hover:underline">查看歌词</a>`;
             } else {
-                songInfoDiv.textContent = '';
+                songInfoDiv.innerHTML = `<a href="#" id="view-lyrics-link" class="text-blue-500 hover:underline">查看歌词</a>`;
             }
             songInfoDiv.classList.remove('hidden');
+
+            // 绑定查看歌词事件
+            setTimeout(() => {
+                const viewLyricsLink = document.getElementById('view-lyrics-link');
+                if (viewLyricsLink) {
+                    viewLyricsLink.onclick = function (e) {
+                        e.preventDefault();
+                        showLyricsModal(state.currentSong);
+                    };
+                }
+            }, 0);
+            // 歌词弹窗相关逻辑
+            function showLyricsModal(song) {
+                const modal = document.getElementById('lyrics-modal');
+                const lyricsContent = document.getElementById('lyrics-content');
+                const closeBtn = document.getElementById('close-lyrics-modal');
+                lyricsContent.textContent = '加载中...';
+                modal.classList.remove('hidden');
+
+                // 歌词文件路径
+                const lyricsPath = `${song.folder}/${song.lyrics}`;
+                fetch(lyricsPath)
+                    .then(res => {
+                        if (!res.ok) throw new Error('歌词加载失败');
+                        return res.text();
+                    })
+                    .then(text => {
+                        lyricsContent.textContent = text;
+                    })
+                    .catch(() => {
+                        lyricsContent.textContent = '歌词加载失败';
+                    });
+
+                closeBtn.onclick = function () {
+                    modal.classList.add('hidden');
+                };
+                // 点击遮罩关闭
+                modal.onclick = function (e) {
+                    if (e.target === modal) {
+                        modal.classList.add('hidden');
+                    }
+                };
+            }
 
             resetPlayerState();
             setupNewSongAndLoad(currentSessionId);

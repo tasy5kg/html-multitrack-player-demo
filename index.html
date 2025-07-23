@@ -26,6 +26,16 @@
                     <option value="" selected disabled>请选择歌曲</option>
                 </select>
                 <div id="song-info" class="hidden text-sm text-slate-500 mt-[-0.5rem] mb-1"></div>
+                <div id="lyrics-modal"
+                    class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+                    <div class="bg-white rounded-lg shadow-lg p-6 max-w-lg w-full relative">
+                        <button id="close-lyrics-modal"
+                            class="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl font-bold">×</button>
+                        <h2 class="text-lg font-bold mb-2">歌词</h2>
+                        <pre id="lyrics-content"
+                            class="whitespace-pre-wrap text-slate-700 text-sm max-h-[60vh] overflow-y-auto"></pre>
+                    </div>
+                </div>
             </div>
 
             <div id="main-player-controls" class="hidden mt-2 mb-4">

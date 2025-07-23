@@ -3,7 +3,8 @@
     "name": "爱的布鲁斯 - 红激",
     "folder": "e589124e",
     "bpm": 135,
-    "song_key":"G",
+    "song_key": "G",
+    "lyrics": "歌词.txt",
     "tracksData": [
       {"name": "人声", "file": "人声.ogg"},
       {"name": "原声吉他", "file": "原声吉他.ogg"},
@@ -18,10 +19,11 @@
     ]
   },
   {
-    "name": "第一滴泪 - 大鹏",
-    "folder": "dfd45745",
+    "name": "第一滴泪 (Live) - 大鹏",
+    "folder": "ba561e05",
     "bpm": 64,
-    "song_key":"B",
+    "song_key": "B",
+    "lyrics": "歌词.txt",
     "tracksData": [
       {"name": "主唱", "file": "主唱.ogg"},
       {"name": "伴唱", "file": "伴唱.ogg"},
@@ -39,7 +41,8 @@
     "name": "回忆见 - 陈雪凝",
     "folder": "acd362a1",
     "bpm": 85,
-    "song_key":"Eb",
+    "song_key": "Eb",
+    "lyrics": "歌词.txt",
     "tracksData": [
       {"name": "主唱", "file": "主唱.ogg"},
       {"name": "伴唱", "file": "伴唱.ogg"},
@@ -56,7 +59,8 @@
     "name": "你 - GALA",
     "folder": "5127f337",
     "bpm": 75,
-    "song_key":"Ab",
+    "song_key": "Ab",
+    "lyrics": "歌词.txt",
     "tracksData": [
       {"name": "主唱", "file": "主唱.ogg"},
       {"name": "伴唱", "file": "伴唱.ogg"},
@@ -73,7 +77,8 @@
     "name": "霓裳风华 - 王者荣耀",
     "folder": "8f9c4dfe",
     "bpm": 70,
-    "song_key":"Bm",
+    "song_key": "Bm",
+    "lyrics": "歌词.txt",
     "tracksData": [
       {"name": "琵琶", "file": "琵琶.ogg"},
       {"name": "琴", "file": "琴.ogg"},
@@ -87,7 +92,8 @@
     "name": "晴天 - 周杰伦",
     "folder": "b90025b2",
     "bpm": 68,
-    "song_key":"G",
+    "song_key": "G",
+    "lyrics": "歌词.txt",
     "tracksData": [
       {"name": "主唱", "file": "主唱.ogg"},
       {"name": "伴唱", "file": "伴唱.ogg"},
@@ -103,7 +109,8 @@
     "name": "天后 (Live) - 李佳薇",
     "folder": "eabaed21",
     "bpm": 81,
-    "song_key":"Gb",
+    "song_key": "Gb",
+    "lyrics": "歌词.txt",
     "tracksData": [
       {"name": "主唱", "file": "主唱.ogg"},
       {"name": "伴唱", "file": "伴唱.ogg"},
@@ -122,7 +129,8 @@
     "name": "雨下晚风 (心华Vocaloid) - 赵阳光",
     "folder": "83f205c5",
     "bpm": 88,
-    "song_key":"E",
+    "song_key": "E",
+    "lyrics": "歌词.txt",
     "tracksData": [
       {"name": "主唱", "file": "主唱.ogg"},
       {"name": "伴唱", "file": "伴唱.ogg"},
@@ -138,7 +146,8 @@
     "name": "New Boy (Live) - 盘尼西林乐队",
     "folder": "ff9df1f0",
     "bpm": 126,
-    "song_key":"D",
+    "song_key": "D",
+    "lyrics": "歌词.txt",
     "tracksData": [
       {"name": "主唱", "file": "主唱.ogg"},
       {"name": "伴唱", "file": "伴唱.ogg"},
@@ -154,7 +163,8 @@
     "name": "Take Me To Your Heart - Michael Learns To Rock",
     "folder": "6d199b53",
     "bpm": 122,
-    "song_key":"Gb",
+    "song_key": "Gb",
+    "lyrics": "歌词.txt",
     "tracksData": [
       {"name": "主唱", "file": "主唱.ogg"},
       {"name": "伴唱", "file": "伴唱.ogg"},
