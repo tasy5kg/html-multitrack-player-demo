@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
         animationFrameId: null,
         totalDownloadSize: 0,
         downloadedBytes: 0,
-        loadingSessionId: 0, 
+        loadingSessionId: 0,
     };
 
     // --- Initialization ---
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('songs.json');
             if (!response.ok) throw new Error('Failed to load songs list.');
             state.songsList = await response.json();
-            
+
             songSelect.innerHTML = '<option value="" selected disabled>请选择歌曲</option>';
             state.songsList.forEach((song, index) => {
                 const option = document.createElement('option');
@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.addEventListener('keydown', handleKeyPress);
     }
-    
+
     // --- Event Handlers ---
 
     function handleRetry() {
@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedIndex = songSelect.value;
         if (state.songsList[selectedIndex]) {
             state.currentSong = state.songsList[selectedIndex];
-            
+
             // --- BUG FIX STARTS HERE ---
             // Remove focus from the select element so keyboard shortcuts work immediately.
             songSelect.blur();
@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 track.audioElement = null;
             }
         });
-        
+
         Object.assign(state, {
             audioContext: null,
             masterGainNode: null,
@@ -162,10 +162,10 @@ document.addEventListener('DOMContentLoaded', () => {
             totalDownloadSize: 0,
             downloadedBytes: 0,
         });
-        
+
         mixerTracksContainer.innerHTML = '';
         cancelAnimationFrame(state.animationFrameId);
-        
+
         mainPlayerControls.classList.add('hidden');
         playerProgressContainer.classList.add('hidden');
         progressStatusContainer.classList.remove('hidden');
@@ -174,22 +174,22 @@ document.addEventListener('DOMContentLoaded', () => {
         errorIcon.classList.add('hidden');
         playPauseBtn.classList.remove('bg-red-500');
     }
-    
+
     async function setupNewSongAndLoad(sessionId) {
         mainPlayerControls.classList.remove('hidden');
         masterMeterContainer.classList.add('hidden');
-        
+
         errorIcon.classList.add('hidden');
         playPauseBtn.classList.remove('bg-red-500');
-        
+
         updatePlayPauseButton(true);
-        
+
         errorText.classList.add('hidden');
         loadingText.classList.remove('hidden');
 
         const tracksData = state.currentSong.tracksData.map(track => ({
             name: track.name,
-            file: `${state.currentSong.folder}/${track.file}`, 
+            file: `${state.currentSong.folder}/${track.file}`,
             defaultVolume: track.name === '节拍器' ? 50 : 75,
         }));
 
@@ -211,20 +211,20 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
-    
+
     // --- Loading & Progress ---
 
     async function calculateTotalSize(sessionId) {
         if (sessionId !== state.loadingSessionId) throw new Error("Session aborted");
         loadingText.innerHTML = '正在计算音频总大小...';
 
-        const promises = state.tracks.map(track => 
+        const promises = state.tracks.map(track =>
             fetch(track.file, { method: 'HEAD' })
         );
         const results = await Promise.allSettled(promises);
-        
+
         if (sessionId !== state.loadingSessionId) throw new Error("Session aborted");
-        
+
         let totalBytes = 0;
         for (const result of results) {
             if (result.status === 'fulfilled' && result.value.ok) {
@@ -232,15 +232,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (size) totalBytes += parseInt(size, 10);
             }
         }
-        
+
         if (totalBytes === 0) {
-           console.warn("Could not determine total size. Progress bar may not be accurate.");
+            console.warn("Could not determine total size. Progress bar may not be accurate.");
         }
-        
+
         state.totalDownloadSize = totalBytes;
         updateLoadingProgress();
     }
-    
+
     function updateLoadingProgress() {
         if (state.totalDownloadSize > 0) {
             const downloadedMB = (state.downloadedBytes / 1024 / 1024).toFixed(1);
@@ -250,7 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
             loadingText.innerHTML = '正在加载音频...';
         }
     }
-    
+
     async function fetchTrackWithProgress(track, sessionId) {
         if (sessionId !== state.loadingSessionId) throw new Error("Session aborted");
 
@@ -259,7 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const reader = response.body.getReader();
         const chunks = [];
-        
+
         while (true) {
             if (sessionId !== state.loadingSessionId) {
                 reader.cancel();
@@ -267,14 +267,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const { done, value } = await reader.read();
             if (done) break;
-            
+
             chunks.push(value);
             state.downloadedBytes += value.length;
             if (sessionId === state.loadingSessionId) {
                 updateLoadingProgress();
             }
         }
-        
+
         const blob = new Blob(chunks);
         return URL.createObjectURL(blob);
     }
@@ -285,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sessionId !== state.loadingSessionId) throw new Error("Session aborted");
 
         state.isInitialized = true;
-        
+
         state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
         state.masterGainNode = state.audioContext.createGain();
         state.masterAnalyserNode = state.audioContext.createAnalyser();
@@ -323,14 +323,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 gainNode.connect(analyserNode);
                 analyserNode.connect(state.masterGainNode);
             }
-            
+
             track.gainNode = gainNode;
             track.analyserNode = analyserNode;
             track.timeDomainData = new Float32Array(analyserNode.fftSize);
 
             const metadataPromise = new Promise((resolve, reject) => {
                 audioElement.addEventListener('loadedmetadata', () => {
-                     if (sessionId !== state.loadingSessionId) return reject(new Error("Session aborted"));
+                    if (sessionId !== state.loadingSessionId) return reject(new Error("Session aborted"));
                     if (audioElement.duration > state.maxDuration) {
                         state.maxDuration = audioElement.duration;
                         masterProgress.max = state.maxDuration;
@@ -346,11 +346,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (sessionId !== state.loadingSessionId) return reject(new Error("Session aborted"));
                     track.wavesurfer = WaveSurfer.create({
                         container: track.ui.waveformContainer,
-                        waveColor: '#10B981',
+                        waveColor: '#10b981',
                         progressColor: '#047857',
                         height: 60,
-                        cursorWidth: 2,
-                        cursorColor: '#f07272',
+                        cursorWidth: 1,
+                        cursorColor: '#f43f5e',   // A contrasting cursor color
                         media: audioElement,
                         interact: true,
                     });
@@ -359,13 +359,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     track.wavesurfer.on('error', (err) => reject(err));
                 });
             }
-            
+
             await Promise.all([metadataPromise, wavesurferPromise]);
         });
-        
+
         loadingText.innerHTML = `正在渲染波形图...`;
         await Promise.all(loadPromises);
-        
+
         if (sessionId === state.loadingSessionId) {
             allTracksReady();
         }
@@ -389,13 +389,13 @@ document.addEventListener('DOMContentLoaded', () => {
         errorIcon.classList.remove('hidden');
         playPauseBtn.classList.add('bg-red-500');
     }
-    
+
     function play() {
         if (state.isPlaying) return;
         if (state.audioContext.state === 'suspended') {
             state.audioContext.resume();
         }
-        
+
         const playPromises = state.tracks.map(track => track.audioElement.play());
         Promise.all(playPromises).then(() => {
             state.isPlaying = true;
@@ -415,14 +415,14 @@ document.addEventListener('DOMContentLoaded', () => {
         state.isPlaying = false;
         updatePlayPauseButton();
     }
-    
+
     function togglePlayPause() {
         if (!state.isInitialized) return;
         state.isPlaying ? pause() : play();
     }
 
     // --- UI & Visualization ---
-    
+
     function createTrackUI(tracksData) {
         mixerTracksContainer.innerHTML = '';
         state.tracks = [];
@@ -432,7 +432,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const isMetronome = trackData.name === '节拍器';
             const { trackElement, uiComponents } = buildSingleTrackUI(trackData, isMetronome);
             mixerTracksContainer.appendChild(trackElement);
-            
+
             const track = {
                 ...trackData,
                 lastVolume: trackData.defaultVolume / 100,
@@ -440,32 +440,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 isSoloed: false,
                 ui: uiComponents,
             };
-            
+
             state.tracks.push(track);
             bindTrackEvents(track, isMetronome);
             updateVolumeSliderFill(uiComponents.volumeSlider, trackData.defaultVolume);
         });
-        
+
         const hideAllTooltips = () => state.tracks.forEach(track => hideTooltip(track.ui));
         document.addEventListener('mouseup', hideAllTooltips);
         document.addEventListener('touchend', hideAllTooltips);
     }
-    
+
     function buildSingleTrackUI(trackData, isMetronome) {
         const trackElement = document.createElement('div');
         trackElement.className = 'py-3';
-    
+
         const topRow = document.createElement('div');
         topRow.className = 'flex items-center justify-between space-x-4 mb-2';
-    
+
         const label = document.createElement('label');
         label.textContent = trackData.name;
-        label.className = 'text-sm font-bold text-gray-700 w-28 truncate';
-    
+        label.className = 'text-sm font-bold text-slate-700 w-28 truncate';
+
         const { sliderWrapper, volumeSlider, volumeTooltip } = createVolumeSlider(trackData);
-    
+
         let controlElements, uiComponents = { volumeSlider, tooltip: volumeTooltip };
-    
+
         if (isMetronome) {
             const { toggleSwitch, toggleInput } = createToggleSwitch();
             const { meterWrapper, meterBar } = createLevelMeter(true);
@@ -479,34 +479,34 @@ document.addEventListener('DOMContentLoaded', () => {
             const { soloMuteContainer, muteBtn, soloBtn } = createControlButtons();
             controlElements = soloMuteContainer;
             Object.assign(uiComponents, { muteBtn, soloBtn });
-    
+
             const bottomRow = document.createElement('div');
             bottomRow.className = 'flex items-center space-x-2';
             const waveformContainer = document.createElement('div');
             waveformContainer.className = 'waveform-container flex-grow';
             const { meterWrapper, meterBar } = createLevelMeter(false);
-            
+
             Object.assign(uiComponents, { waveformContainer, meterBar });
-            
+
             bottomRow.append(waveformContainer, meterWrapper);
             topRow.append(label, sliderWrapper, controlElements);
             trackElement.append(topRow, bottomRow);
         }
-    
+
         return { trackElement, uiComponents };
     }
-    
+
     function createVolumeSlider(trackData) {
         const sliderWrapper = document.createElement('div');
         sliderWrapper.className = 'volume-slider-wrapper relative flex-grow h-[20px] flex items-center';
         const volumeSlider = document.createElement('input');
         Object.assign(volumeSlider, { type: 'range', min: 0, max: 100, value: trackData.defaultVolume });
         volumeSlider.className = 'volume-slider w-full';
-        
+
         const volumeTooltip = document.createElement('div');
-        volumeTooltip.className = 'volume-tooltip absolute top-0 bg-gray-800 text-white text-xs rounded py-1 px-2 pointer-events-none opacity-0 transition-opacity duration-200';
+        volumeTooltip.className = 'volume-tooltip absolute top-0 bg-slate-800 text-white text-xs rounded py-1 px-2 pointer-events-none opacity-0 transition-opacity duration-200';
         volumeTooltip.textContent = `${trackData.defaultVolume}%`;
-        
+
         sliderWrapper.append(volumeSlider, volumeTooltip);
         return { sliderWrapper, volumeSlider, volumeTooltip };
     }
@@ -523,7 +523,7 @@ document.addEventListener('DOMContentLoaded', () => {
         soloMuteContainer.append(muteBtn, soloBtn);
         return { soloMuteContainer, muteBtn, soloBtn };
     }
-    
+
     function createToggleSwitch() {
         const toggleSwitch = document.createElement('label');
         toggleSwitch.className = 'toggle-switch';
@@ -544,15 +544,15 @@ document.addEventListener('DOMContentLoaded', () => {
         meterWrapper.appendChild(meterBar);
         return { meterWrapper, meterBar };
     }
-    
+
     // --- Event Binding ---
-    
+
     function bindTrackEvents(track, isMetronome) {
         const { volumeSlider } = track.ui;
         volumeSlider.addEventListener('input', e => handleVolumeChange(e, track));
         volumeSlider.addEventListener('mousedown', () => showTooltip(track.ui));
         volumeSlider.addEventListener('touchstart', () => showTooltip(track.ui), { passive: true });
-        
+
         if (isMetronome) {
             track.ui.toggleInput.addEventListener('change', () => handleMetronomeToggle(track));
         } else {
@@ -560,9 +560,9 @@ document.addEventListener('DOMContentLoaded', () => {
             track.ui.soloBtn.addEventListener('click', () => handleSoloClick(track));
         }
     }
-    
+
     // --- More Event Handlers ---
-    
+
     function handleVolumeChange(event, track) {
         const value = parseFloat(event.target.value);
         track.lastVolume = value / 100;
@@ -570,25 +570,25 @@ document.addEventListener('DOMContentLoaded', () => {
         updateVolumeSliderFill(track.ui.volumeSlider, value);
         updateTooltip(track.ui);
     }
-    
+
     function handleMuteClick(track) {
         track.isMuted = !track.isMuted;
         track.ui.muteBtn.classList.toggle('active', track.isMuted);
         updateAllTrackVolumes();
     }
-    
+
     function handleSoloClick(track) {
         track.isSoloed = !track.isSoloed;
         track.ui.soloBtn.classList.toggle('active', track.isSoloed);
         state.isAnyTrackSoloed = state.tracks.some(t => t.isSoloed);
         updateAllTrackVolumes();
     }
-    
+
     function handleMetronomeToggle(track) {
         track.isMuted = !track.ui.toggleInput.checked;
         updateAllTrackVolumes();
     }
-    
+
     function handleMasterProgressInput() {
         showProgressTooltip();
         updateMasterProgressFill();
@@ -598,7 +598,7 @@ document.addEventListener('DOMContentLoaded', () => {
         hideProgressTooltip();
         seekPlayerTo(parseFloat(masterProgress.value));
     }
-    
+
     function seekPlayerTo(seekTime) {
         const wasPlaying = state.isPlaying;
 
@@ -613,14 +613,14 @@ document.addEventListener('DOMContentLoaded', () => {
         masterProgress.value = seekTime;
         currentTimeDisplay.textContent = formatTime(seekTime);
         updateMasterProgressFill();
-        
+
         if (wasPlaying) {
             play();
         }
     }
-    
+
     // --- Volume & Mute/Solo Logic ---
-    
+
     function updateAllTrackVolumes() {
         if (!state.audioContext) return;
 
@@ -647,7 +647,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Animation & Updates ---
-    
+
     function updateProgress() {
         if (!state.isPlaying) {
             cancelAnimationFrame(state.animationFrameId);
@@ -673,7 +673,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateLevelMeters();
         updateMasterLevelMeter();
     }
-    
+
     function updateLevelMeters() {
         state.tracks.forEach(track => {
             if (!track.analyserNode || !track.ui.meterBar) return;
@@ -685,13 +685,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!state.masterAnalyserNode || !masterMeterBar) return;
         updateSingleMeter(state.masterAnalyserNode, state.masterTimeDomainData, masterMeterBar);
     }
-    
+
     function updateSingleMeter(analyserNode, timeDomainData, meterBar, track = null) {
         const meterWrapper = meterBar.parentElement;
         const isMetronomeMeter = meterWrapper.classList.contains('metronome-meter');
+        const rootStyles = getComputedStyle(document.documentElement);
 
         if (isMetronomeMeter && track && track.isMuted) {
-            meterWrapper.style.backgroundColor = '#e5e7eb';
+            meterWrapper.style.backgroundColor = rootStyles.getPropertyValue('--color-border').trim();
             return;
         }
 
@@ -705,29 +706,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (peakAmplitude === 0) {
             if (isMetronomeMeter) {
-                meterWrapper.style.backgroundColor = '#e5e7eb';
+                meterWrapper.style.backgroundColor = rootStyles.getPropertyValue('--color-border').trim();
             } else {
                 meterBar.style.height = '0%';
             }
             return;
         }
-        
+
         const peakDb = 20 * Math.log10(peakAmplitude);
         const levelPercent = peakDb < MIN_DB ? 0 : Math.min(100, Math.max(0, ((((peakDb - MIN_DB) / -MIN_DB) ** 2) * 100) | 0));
-        
+
         if (isMetronomeMeter) {
-            const fillColor = 'rgb(0, 166, 62)';
-            const bgColor = '#e5e7eb';
+            const fillColor = rootStyles.getPropertyValue('--color-success').trim();
+            const bgColor = rootStyles.getPropertyValue('--color-border').trim();
             meterWrapper.style.backgroundColor = levelPercent > 85 ? fillColor : bgColor;
             meterBar.style.height = '0%';
         } else {
             meterBar.style.height = `${levelPercent}%`;
-            meterBar.style.backgroundColor = `rgb(0, 166, 62)`;
+            // The color is now set by CSS variable in styles.css, no need to set it here.
         }
     }
-    
+
     // --- UI Update Functions ---
-    
+
     function updatePlayPauseButton(isLoading = false) {
         if (isLoading) {
             playPauseBtn.disabled = true;
@@ -742,16 +743,17 @@ document.addEventListener('DOMContentLoaded', () => {
         loadingIcon.classList.add('hidden');
         playIcon.classList.toggle('hidden', state.isPlaying);
         pauseIcon.classList.toggle('hidden', !state.isPlaying);
-        
-        const fromColor = state.isPlaying ? 'bg-amber-500' : 'bg-blue-500';
-        const toColor = state.isPlaying ? 'bg-blue-500' : 'bg-amber-500';
-        const fromHover = state.isPlaying ? 'hover:bg-amber-600' : 'hover:bg-blue-600';
-        const toHover = state.isPlaying ? 'hover:bg-blue-600' : 'hover:bg-amber-600';
-        
-        playPauseBtn.classList.replace(fromColor, toColor);
-        playPauseBtn.classList.replace(fromHover, toHover);
+
+        // Simplified class toggling, colors are managed by Tailwind classes in HTML
+        if (state.isPlaying) {
+            playPauseBtn.classList.replace('bg-blue-500', 'bg-amber-500');
+            playPauseBtn.classList.replace('hover:bg-blue-600', 'hover:bg-amber-600');
+        } else {
+            playPauseBtn.classList.replace('bg-amber-500', 'bg-blue-500');
+            playPauseBtn.classList.replace('hover:bg-amber-600', 'hover:bg-blue-600');
+        }
     }
-    
+
     function updateVolumeSliderFill(slider, value) {
         const percent = Math.max(0, Math.min(100, value));
         const wrapper = slider.parentElement;
@@ -797,16 +799,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const trackWidth = masterProgress.offsetWidth;
         const thumbWidth = 16;
         const percent = val / masterProgress.max;
-        
+
         let thumbPosition = percent * (trackWidth - thumbWidth) + (thumbWidth / 2);
         const tooltipWidth = progressTooltip.offsetWidth;
         const left = Math.max(0, thumbPosition - tooltipWidth / 2);
-        
+
         progressTooltip.style.left = `${Math.min(left, trackWidth - tooltipWidth)}px`;
     }
 
     // --- Utilities ---
-    
+
     function formatTime(seconds) {
         const secs = Math.floor(seconds);
         const minutes = Math.floor(secs / 60);

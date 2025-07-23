@@ -5,20 +5,39 @@
  */
 
 :root {
-    --progress-track-bg: #e5e7eb;
-    --progress-track-fill-bg: #4182ea;
-    --volume-track-bg: #e6ebe5;
-    --volume-track-fill-bg: #75dd7a;
-    --thumb-bg: #67bf6d;
-    --thumb-hover-bg: #84d77e;
-    --mute-button-bg: #8b5cf6;
-    --mute-button-border: #7c3aed;
-    --toggle-switch-bg-off: var(--volume-track-bg);
-    --toggle-switch-bg-on: var(--thumb-bg);
+    --color-background: #f8fafc;
+    --color-surface: #ffffff;
+    --color-primary: #3b82f6;
+    --color-primary-dark: #2563eb;
+    --color-primary-light: #93c5fd;
+    --color-accent-mute: #8b5cf6;
+    --color-accent-mute-dark: #7c3aed;
+    --color-accent-solo: #f59e0b;
+    --color-accent-solo-dark: #d97706;
+    --color-success: #22c55e;
+    --color-success-dark: #16a34a;
+    --color-text-primary: #1e293b;
+    --color-text-secondary: #64748b;
+    --color-border: #e2e8f0;
+    --color-control-bg: #f1f5f9;
+
+    /* Mapping to old variables for compatibility */
+    --progress-track-bg: var(--color-border);
+    --progress-track-fill-bg: var(--color-primary);
+    --volume-track-bg: var(--color-control-bg);
+    --volume-track-fill-bg: var(--color-success);
+    --thumb-bg: var(--color-success);
+    --thumb-hover-bg: var(--color-success-dark);
+    --mute-button-bg: var(--color-accent-mute);
+    --mute-button-border: var(--color-accent-mute-dark);
+    --toggle-switch-bg-off: var(--color-border);
+    --toggle-switch-bg-on: var(--color-success);
 }
 
 body {
     -webkit-tap-highlight-color: transparent;
+    background-color: var(--color-background);
+    /* Use new background color */
 }
 
 /*
@@ -31,12 +50,12 @@ body {
     -webkit-appearance: none;
     appearance: none;
     background-color: #f9fafb;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--color-border);
     border-radius: 0.5rem;
     padding: 0.75rem 3rem 0.75rem 1rem;
     font-size: 1rem;
     font-weight: 500;
-    color: #1f2937;
+    color: var(--color-text-primary);
     cursor: pointer;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
     background-position: right 0.5rem center;
@@ -46,13 +65,13 @@ body {
 }
 
 #song-select:hover {
-    border-color: #9ca3af;
+    border-color: #cbd5e1;
 }
 
 #song-select:focus {
     outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 40%, transparent);
 }
 
 /*
@@ -120,7 +139,7 @@ input[type="range"].volume-slider::-webkit-slider-thumb {
     background: var(--thumb-bg);
     border-radius: 3px;
     border: 2px solid white;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     transition: transform 0.2s ease-out, background-color 0.2s ease-out;
 }
 
@@ -139,7 +158,7 @@ input[type="range"].volume-slider::-moz-range-thumb {
     background: var(--thumb-bg);
     border-radius: 3px;
     border: 2px solid white;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     cursor: pointer;
     transition: transform 0.2s ease-out, background-color 0.2s ease-out;
 }
@@ -164,7 +183,7 @@ input[type="range"].volume-slider:active::-moz-range-thumb {
     appearance: none;
     width: 100%;
     height: 6px;
-    background: #d1d5db;
+    background: var(--color-border);
     border-radius: 9999px;
     outline: none;
     cursor: pointer;
@@ -180,8 +199,8 @@ input[type="range"].volume-slider:active::-moz-range-thumb {
     height: 16px;
     background: #ffffff;
     border-radius: 50%;
-    border: 2px solid #3b82f6;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+    border: 2px solid var(--color-primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     transition: transform 0.2s ease-out;
 }
 
@@ -195,8 +214,8 @@ input[type="range"].volume-slider:active::-moz-range-thumb {
     height: 16px;
     background: #ffffff;
     border-radius: 50%;
-    border: 2px solid #3b82f6;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+    border: 2px solid var(--color-primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     cursor: pointer;
     transition: transform 0.2s ease-out;
 }
@@ -222,21 +241,18 @@ input[type="range"].volume-slider:active::-moz-range-thumb {
  * =============================================
  */
 
-/* 样式已为 wavesurfer.js 优化 */
 .waveform-container {
     height: 60px;
-    background-color: #f3f4f6;
+    background-color: var(--color-control-bg);
     border-radius: 8px;
     position: relative;
     overflow: hidden;
 }
 
-/* 移除旧的 SVG 波形图相关样式 */
-
 .vertical-meter-wrapper {
     width: 8px;
     height: 60px;
-    background-color: #e5e7eb;
+    background-color: var(--color-border);
     border-radius: 9999px;
     overflow: hidden;
     display: flex;
@@ -246,6 +262,7 @@ input[type="range"].volume-slider:active::-moz-range-thumb {
 .vertical-meter-bar {
     width: 100%;
     height: 0%;
+    background-color: var(--color-success);
     transition: height 0.1s ease-out;
 }
 
@@ -255,10 +272,10 @@ input[type="range"].volume-slider:active::-moz-range-thumb {
 }
 
 .vertical-meter-wrapper.metronome-meter {
-    width: 28px;
-    height: 28px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
-    background-color: #e5e7eb;
+    background-color: var(--color-border);
     transition: background-color 0.05s ease-out;
 }
 
@@ -276,13 +293,18 @@ input[type="range"].volume-slider:active::-moz-range-thumb {
     font-weight: bold;
     font-size: 13px;
     cursor: pointer;
-    border: 1px solid #d1d5db;
-    background-color: #f3f4f6;
-    color: #4b5563;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-control-bg);
+    color: var(--color-text-secondary);
     transition: background-color 0.2s, color 0.2s, border-color 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.control-button:hover {
+    border-color: #cbd5e1;
+    color: var(--color-text-primary);
 }
 
 .mute-button.active {
@@ -292,9 +314,9 @@ input[type="range"].volume-slider:active::-moz-range-thumb {
 }
 
 .solo-button.active {
-    background-color: #f59e0b;
+    background-color: var(--color-accent-solo);
     color: white;
-    border-color: #d97706;
+    border-color: var(--color-accent-solo-dark);
 }
 
 
@@ -339,6 +361,7 @@ input[type="range"].volume-slider:active::-moz-range-thumb {
     background-color: white;
     transition: .4s;
     border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .toggle-switch-checkbox:checked+.toggle-switch-slider {
