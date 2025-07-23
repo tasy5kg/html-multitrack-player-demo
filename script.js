@@ -111,12 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedIndex = songSelect.value;
         if (state.songsList[selectedIndex]) {
             state.currentSong = state.songsList[selectedIndex];
-
-            // --- BUG FIX STARTS HERE ---
-            // Remove focus from the select element so keyboard shortcuts work immediately.
             songSelect.blur();
-            // --- BUG FIX ENDS HERE ---
-
             const songInfoDiv = document.getElementById('song-info');
             if (state.currentSong.bpm && state.currentSong.song_key) {
                 songInfoDiv.innerHTML = `BPM: ${state.currentSong.bpm}&nbsp;&nbsp;调式: ${state.currentSong.song_key}`;
@@ -657,6 +652,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const firstAudio = state.tracks[0]?.audioElement;
         if (!firstAudio) return;
         const currentTime = firstAudio.currentTime;
+
+        for (let i = 1; i < state.tracks.length; i++) {
+            const track = state.tracks[i];
+            if (track.audioElement) {
+                const timeDiff = Math.abs(track.audioElement.currentTime - currentTime);
+                // Only correct if the drift is larger than a small threshold (e.g., 100ms).
+                // This prevents excessive seeking which can cause minor audio glitches.
+                if (timeDiff > 0.1) {
+                    track.audioElement.currentTime = currentTime;
+                }
+            }
+        }
 
         if (currentTime >= state.maxDuration) {
             pause();
