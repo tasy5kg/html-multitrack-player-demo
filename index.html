@@ -22,20 +22,7 @@
                 <select id="song-select" class="w-full max-w-xs mx-auto my-6" aria-label="选择歌曲">
                     <option value="" selected disabled>请选择歌曲</option>
                 </select>
-                <div id="selected-song-name" class="hidden text-base font-semibold text-gray-700 mt-1"></div>
-                <div id="song-info" class="hidden text-sm text-gray-500 mt-1"></div>
-            </div>
-            
-            <div id="quality-selection-container" class="text-center hidden">
-                <p class="text-sm text-gray-600 mt-2 mb-2">请选择音质版本</p>
-                <div class="flex justify-center space-x-2 mb-4">
-                    <button id="load-hq-btn" disabled class="px-3 py-2 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-wait text-xs" aria-label="加载高音质">
-                        高音质<span id="hq-size" class="text-xs font-normal ml-1"></span>
-                    </button>
-                    <button id="load-lq-btn" disabled class="px-3 py-2 bg-green-500 text-white rounded-lg shadow-md hover:bg-green-600 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-wait text-xs" aria-label="加载低音质">
-                        低音质<span id="lq-size" class="text-xs font-normal ml-1"></span>
-                    </button>
-                </div>
+                <div id="song-info" class="hidden text-sm text-gray-500 mt-[-1rem] mb-4"></div>
             </div>
 
             <div id="main-player-controls" class="space-y-2 hidden mt-2 mb-4">
@@ -60,7 +47,7 @@
                         <div id="progress-status-container" class="text-center py-2 h-[34px] flex items-center justify-center">
                             <div id="loading-text" class="text-sm text-gray-500"></div>
                             <div id="error-text" class="hidden text-sm text-red-500">
-                                音频资源加载失败，请<a href="javascript:location.reload()" class="font-bold underline">刷新页面</a>重试。
+                                音频资源加载失败，<button id="retry-load-btn" class="font-bold underline">点击重试</button>。
                             </div>
                         </div>
 
@@ -98,7 +85,6 @@
                 <p>本页面包含 AI 生成的代码</p>
                 <p class="mt-1">音乐轨道由 AI 提取，存在一定瑕疵</p>
                 <p class="mt-1">音频素材仅作功能演示，如有侵权请联系删除</p>
-                <p class="mt-1">要重选歌曲，请刷新本页面</p>
                 <p class="mt-2">
                     <a href="https://github.com/tasy5kg/html-multitrack-player-demo" target="_blank" rel="noopener noreferrer" class="text-blue-400 underline">
                         在 GitHub 上查看

@@ -5,16 +5,16 @@
     "bpm": 135,
     "song_key":"G",
     "tracksData": [
-      {"name": "人声", "file": "人声"},
-      {"name": "原声吉他", "file": "原声吉他"},
-      {"name": "电吉他", "file": "电吉他"},
-      {"name": "贝斯", "file": "贝斯"},
-      {"name": "打击乐", "file": "打击乐"},
-      {"name": "钢琴", "file": "钢琴"},
-      {"name": "键盘", "file": "键盘"},
-      {"name": "管乐", "file": "管乐"},
-      {"name": "弦乐", "file": "弦乐"},
-      {"name": "节拍器", "file": "节拍器"}
+      {"name": "人声", "file": "人声.ogg"},
+      {"name": "原声吉他", "file": "原声吉他.ogg"},
+      {"name": "电吉他", "file": "电吉他.ogg"},
+      {"name": "贝斯", "file": "贝斯.ogg"},
+      {"name": "打击乐", "file": "打击乐.ogg"},
+      {"name": "钢琴", "file": "钢琴.ogg"},
+      {"name": "键盘", "file": "键盘.ogg"},
+      {"name": "管乐", "file": "管乐.ogg"},
+      {"name": "弦乐", "file": "弦乐.ogg"},
+      {"name": "节拍器", "file": "节拍器.ogg"}
     ]
   },
   {
@@ -23,15 +23,15 @@
     "bpm": 85,
     "song_key":"Eb",
     "tracksData": [
-      {"name": "主唱", "file": "主唱"},
-      {"name": "伴唱", "file": "伴唱"},
-      {"name": "原声吉他", "file": "原声吉他"},
-      {"name": "电吉他", "file": "电吉他"},
-      {"name": "贝斯", "file": "贝斯"},
-      {"name": "打击乐", "file": "打击乐"},
-      {"name": "钢琴", "file": "钢琴"},
-      {"name": "其它", "file": "其它"},
-      {"name": "节拍器", "file": "节拍器"}
+      {"name": "主唱", "file": "主唱.ogg"},
+      {"name": "伴唱", "file": "伴唱.ogg"},
+      {"name": "原声吉他", "file": "原声吉他.ogg"},
+      {"name": "电吉他", "file": "电吉他.ogg"},
+      {"name": "贝斯", "file": "贝斯.ogg"},
+      {"name": "打击乐", "file": "打击乐.ogg"},
+      {"name": "钢琴", "file": "钢琴.ogg"},
+      {"name": "其它", "file": "其它.ogg"},
+      {"name": "节拍器", "file": "节拍器.ogg"}
     ]
   },
   {
@@ -40,15 +40,15 @@
     "bpm": 75,
     "song_key":"Ab",
     "tracksData": [
-      {"name": "主唱", "file": "主唱"},
-      {"name": "伴唱", "file": "伴唱"},
-      {"name": "原声吉他", "file": "原声吉他"},
-      {"name": "电吉他", "file": "电吉他"},
-      {"name": "贝斯", "file": "贝斯"},
-      {"name": "打击乐", "file": "打击乐"},
-      {"name": "钢琴", "file": "钢琴"},
-      {"name": "其它", "file": "其它"},
-      {"name": "节拍器", "file": "节拍器"}
+      {"name": "主唱", "file": "主唱.ogg"},
+      {"name": "伴唱", "file": "伴唱.ogg"},
+      {"name": "原声吉他", "file": "原声吉他.ogg"},
+      {"name": "电吉他", "file": "电吉他.ogg"},
+      {"name": "贝斯", "file": "贝斯.ogg"},
+      {"name": "打击乐", "file": "打击乐.ogg"},
+      {"name": "钢琴", "file": "钢琴.ogg"},
+      {"name": "其它", "file": "其它.ogg"},
+      {"name": "节拍器", "file": "节拍器.ogg"}
     ]
   },
   {
@@ -57,12 +57,12 @@
     "bpm": 70,
     "song_key":"Bm",
     "tracksData": [
-      {"name": "琵琶", "file": "琵琶"},
-      {"name": "琴", "file": "琴"},
-      {"name": "打击乐", "file": "打击乐"},
-      {"name": "弦乐", "file": "弦乐"},
-      {"name": "其它", "file": "其它"},
-      {"name": "节拍器", "file": "节拍器"}
+      {"name": "琵琶", "file": "琵琶.ogg"},
+      {"name": "琴", "file": "琴.ogg"},
+      {"name": "打击乐", "file": "打击乐.ogg"},
+      {"name": "弦乐", "file": "弦乐.ogg"},
+      {"name": "其它", "file": "其它.ogg"},
+      {"name": "节拍器", "file": "节拍器.ogg"}
     ]
   },
   {
@@ -71,14 +71,14 @@
     "bpm": 68,
     "song_key":"G",
     "tracksData": [
-      {"name": "主唱", "file": "主唱"},
-      {"name": "伴唱", "file": "伴唱"},
-      {"name": "原声吉他", "file": "原声吉他"},
-      {"name": "电吉他", "file": "电吉他"},
-      {"name": "贝斯", "file": "贝斯"},
-      {"name": "打击乐", "file": "打击乐"},
-      {"name": "管乐", "file": "管乐"},
-      {"name": "节拍器", "file": "节拍器"}
+      {"name": "主唱", "file": "主唱.ogg"},
+      {"name": "伴唱", "file": "伴唱.ogg"},
+      {"name": "原声吉他", "file": "原声吉他.ogg"},
+      {"name": "电吉他", "file": "电吉他.ogg"},
+      {"name": "贝斯", "file": "贝斯.ogg"},
+      {"name": "打击乐", "file": "打击乐.ogg"},
+      {"name": "管乐", "file": "管乐.ogg"},
+      {"name": "节拍器", "file": "节拍器.ogg"}
     ]
   },
   {
@@ -87,11 +87,11 @@
     "bpm": 81,
     "song_key":"Gb",
     "tracksData": [
-      {"name": "人声", "file": "人声"},
-      {"name": "吉他", "file": "吉他"},
-      {"name": "贝斯、打击乐", "file": "贝斯、打击乐"},
-      {"name": "键盘、管弦乐", "file": "键盘、管弦乐"},
-      {"name": "节拍器", "file": "节拍器"}
+      {"name": "人声", "file": "人声.ogg"},
+      {"name": "吉他", "file": "吉他.ogg"},
+      {"name": "贝斯、打击乐", "file": "贝斯、打击乐.ogg"},
+      {"name": "键盘、管弦乐", "file": "键盘、管弦乐.ogg"},
+      {"name": "节拍器", "file": "节拍器.ogg"}
     ]
   },
   {
@@ -100,14 +100,14 @@
     "bpm": 88,
     "song_key":"E",
     "tracksData": [
-      {"name": "主唱", "file": "主唱"},
-      {"name": "伴唱", "file": "伴唱"},
-      {"name": "吉他", "file": "吉他"},
-      {"name": "贝斯", "file": "贝斯"},
-      {"name": "打击乐", "file": "打击乐"},
-      {"name": "钢琴、键盘", "file": "钢琴、键盘"},
-      {"name": "弦乐", "file": "弦乐"},
-      {"name": "节拍器", "file": "节拍器"}
+      {"name": "主唱", "file": "主唱.ogg"},
+      {"name": "伴唱", "file": "伴唱.ogg"},
+      {"name": "吉他", "file": "吉他.ogg"},
+      {"name": "贝斯", "file": "贝斯.ogg"},
+      {"name": "打击乐", "file": "打击乐.ogg"},
+      {"name": "钢琴、键盘", "file": "钢琴、键盘.ogg"},
+      {"name": "弦乐", "file": "弦乐.ogg"},
+      {"name": "节拍器", "file": "节拍器.ogg"}
     ]
   },
   {
@@ -116,14 +116,14 @@
     "bpm": 126,
     "song_key":"D",
     "tracksData": [
-      {"name": "主唱", "file": "主唱"},
-      {"name": "伴唱", "file": "伴唱"},
-      {"name": "原声吉他", "file": "原声吉他"},
-      {"name": "电吉他", "file": "电吉他"},
-      {"name": "贝斯", "file": "贝斯"},
-      {"name": "打击乐", "file": "打击乐"},
-      {"name": "其它", "file": "其它"},
-      {"name": "节拍器", "file": "节拍器"}
+      {"name": "主唱", "file": "主唱.ogg"},
+      {"name": "伴唱", "file": "伴唱.ogg"},
+      {"name": "原声吉他", "file": "原声吉他.ogg"},
+      {"name": "电吉他", "file": "电吉他.ogg"},
+      {"name": "贝斯", "file": "贝斯.ogg"},
+      {"name": "打击乐", "file": "打击乐.ogg"},
+      {"name": "其它", "file": "其它.ogg"},
+      {"name": "节拍器", "file": "节拍器.ogg"}
     ]
   },
   {
@@ -132,15 +132,15 @@
     "bpm": 122,
     "song_key":"Gb",
     "tracksData": [
-      {"name": "主唱", "file": "主唱"},
-      {"name": "伴唱", "file": "伴唱"},
-      {"name": "主音吉他", "file": "主音吉他"},
-      {"name": "节奏吉他", "file": "节奏吉他"},
-      {"name": "贝斯", "file": "贝斯"},
-      {"name": "打击乐", "file": "打击乐"},
-      {"name": "钢琴", "file": "钢琴"},
-      {"name": "弦乐", "file": "弦乐"},
-      {"name": "节拍器", "file": "节拍器"}
+      {"name": "主唱", "file": "主唱.ogg"},
+      {"name": "伴唱", "file": "伴唱.ogg"},
+      {"name": "主音吉他", "file": "主音吉他.ogg"},
+      {"name": "节奏吉他", "file": "节奏吉他.ogg"},
+      {"name": "贝斯", "file": "贝斯.ogg"},
+      {"name": "打击乐", "file": "打击乐.ogg"},
+      {"name": "钢琴", "file": "钢琴.ogg"},
+      {"name": "弦乐", "file": "弦乐.ogg"},
+      {"name": "节拍器", "file": "节拍器.ogg"}
     ]
   }
 ]

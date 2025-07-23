@@ -2,12 +2,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- DOM Elements ---
     const songSelect = document.getElementById('song-select');
-    const selectedSongName = document.getElementById('selected-song-name');
-    const qualitySelectionContainer = document.getElementById('quality-selection-container');
-    const loadHqBtn = document.getElementById('load-hq-btn');
-    const loadLqBtn = document.getElementById('load-lq-btn');
-    const hqSizeSpan = document.getElementById('hq-size');
-    const lqSizeSpan = document.getElementById('lq-size');
     const mainPlayerControls = document.getElementById('main-player-controls');
     const playPauseBtn = document.getElementById('play-pause-btn');
     const loadingIcon = document.getElementById('loading-icon');
@@ -17,12 +11,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const progressStatusContainer = document.getElementById('progress-status-container');
     const loadingText = document.getElementById('loading-text');
     const errorText = document.getElementById('error-text');
+    const retryLoadBtn = document.getElementById('retry-load-btn');
     const playerProgressContainer = document.getElementById('player-progress-container');
     const masterProgress = document.getElementById('master-progress');
     const currentTimeDisplay = document.getElementById('current-time');
     const totalDurationDisplay = document.getElementById('total-duration');
     const progressTooltip = document.getElementById('progress-tooltip');
     const mixerTracksContainer = document.getElementById('mixer-tracks');
+    const masterMeterContainer = document.getElementById('master-meter-container');
     const masterMeterBar = document.getElementById('master-meter-bar');
 
     // --- State Management ---
@@ -41,15 +37,14 @@ document.addEventListener('DOMContentLoaded', () => {
         maxDuration: 0,
         animationFrameId: null,
         totalDownloadSize: 0,
-        storedHqBytes: 0,
-        storedLqBytes: 0,
+        downloadedBytes: 0,
+        loadingSessionId: 0, 
     };
 
     // --- Initialization ---
 
     function initialize() {
         mainPlayerControls.classList.add('hidden');
-        qualitySelectionContainer.classList.add('hidden');
         mixerTracksContainer.innerHTML = '';
         loadSongsList();
         bindGlobalEvents();
@@ -76,9 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function bindGlobalEvents() {
         songSelect.addEventListener('change', handleSongSelection);
-        loadHqBtn.addEventListener('click', () => startLoading('hq'));
-        loadLqBtn.addEventListener('click', () => startLoading('lq'));
         playPauseBtn.addEventListener('click', togglePlayPause);
+        retryLoadBtn.addEventListener('click', handleRetry);
 
         masterProgress.addEventListener('input', handleMasterProgressInput);
         masterProgress.addEventListener('change', handleMasterProgressChange);
@@ -86,19 +80,42 @@ document.addEventListener('DOMContentLoaded', () => {
         masterProgress.addEventListener('mouseup', () => state.isSeeking = false);
         masterProgress.addEventListener('touchstart', () => state.isSeeking = true, { passive: true });
         masterProgress.addEventListener('touchend', () => state.isSeeking = false);
+
+        document.addEventListener('keydown', handleKeyPress);
     }
+    
+    // --- Event Handlers ---
+
+    function handleRetry() {
+        setupNewSongAndLoad(++state.loadingSessionId);
+    }
+
+    function handleKeyPress(event) {
+        const targetTagName = event.target.tagName;
+        if (['INPUT', 'SELECT', 'BUTTON'].includes(targetTagName)) {
+            return;
+        }
+        if (event.code === 'Space') {
+            event.preventDefault();
+            togglePlayPause();
+        }
+    }
+
 
     // --- Song & Quality Selection ---
 
     function handleSongSelection() {
+        state.loadingSessionId++;
+        const currentSessionId = state.loadingSessionId;
+
         const selectedIndex = songSelect.value;
         if (state.songsList[selectedIndex]) {
             state.currentSong = state.songsList[selectedIndex];
-            songSelect.classList.add('hidden');
-            selectedSongName.textContent = state.currentSong.name;
-            selectedSongName.classList.remove('hidden');
-            qualitySelectionContainer.classList.remove('hidden');
-            mainPlayerControls.classList.add('hidden');
+            
+            // --- BUG FIX STARTS HERE ---
+            // Remove focus from the select element so keyboard shortcuts work immediately.
+            songSelect.blur();
+            // --- BUG FIX ENDS HERE ---
 
             const songInfoDiv = document.getElementById('song-info');
             if (state.currentSong.bpm && state.currentSong.song_key) {
@@ -113,7 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
             songInfoDiv.classList.remove('hidden');
 
             resetPlayerState();
-            setupNewSong();
+            setupNewSongAndLoad(currentSessionId);
         }
     }
 
@@ -126,6 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 track.wavesurfer.destroy();
             }
             if (track.audioElement) {
+                if (track.blobUrl) URL.revokeObjectURL(track.blobUrl);
                 track.audioElement.src = '';
                 track.audioElement = null;
             }
@@ -142,103 +160,190 @@ document.addEventListener('DOMContentLoaded', () => {
             isAnyTrackSoloed: false,
             maxDuration: 0,
             totalDownloadSize: 0,
-            storedHqBytes: 0,
-            storedLqBytes: 0,
+            downloadedBytes: 0,
         });
         
         mixerTracksContainer.innerHTML = '';
         cancelAnimationFrame(state.animationFrameId);
+        
+        mainPlayerControls.classList.add('hidden');
+        playerProgressContainer.classList.add('hidden');
+        progressStatusContainer.classList.remove('hidden');
+        loadingText.textContent = '';
+        errorText.classList.add('hidden');
+        errorIcon.classList.add('hidden');
+        playPauseBtn.classList.remove('bg-red-500');
     }
     
-    function setupNewSong() {
+    async function setupNewSongAndLoad(sessionId) {
+        mainPlayerControls.classList.remove('hidden');
+        masterMeterContainer.classList.add('hidden');
+        
+        errorIcon.classList.add('hidden');
+        playPauseBtn.classList.remove('bg-red-500');
+        
+        updatePlayPauseButton(true);
+        
+        errorText.classList.add('hidden');
+        loadingText.classList.remove('hidden');
+
         const tracksData = state.currentSong.tracksData.map(track => ({
             name: track.name,
-            baseName: track.file, 
+            file: `${state.currentSong.folder}/${track.file}`, 
             defaultVolume: track.name === '节拍器' ? 50 : 75,
-            folder: state.currentSong.folder,
         }));
 
         createTrackUI(tracksData);
-        
-        hqSizeSpan.textContent = '(计算中…)';
-        lqSizeSpan.textContent = '(计算中…)';
-        loadHqBtn.disabled = true;
-        loadLqBtn.disabled = true;
 
-        Promise.all([
-            calculateTotalSize('ogg', hqSizeSpan),
-            calculateTotalSize('m4a', lqSizeSpan)
-        ]).then(([hqBytes, lqBytes]) => {
-            state.storedHqBytes = hqBytes;
-            state.storedLqBytes = lqBytes;
-            loadHqBtn.disabled = false;
-            loadLqBtn.disabled = false;
-        });
+        try {
+            await calculateTotalSize(sessionId);
+            if (sessionId !== state.loadingSessionId) return;
+            await initializeAudio(sessionId);
+
+        } catch (error) {
+            if (error.message !== "Session aborted") {
+                console.error("Failed to load song:", error);
+                if (sessionId === state.loadingSessionId) {
+                    handleLoadingError(error);
+                }
+            } else {
+                console.log(`Session ${sessionId} successfully aborted.`);
+            }
+        }
     }
+    
+    // --- Loading & Progress ---
 
-    function startLoading(quality) {
-        qualitySelectionContainer.classList.add('hidden');
-        mainPlayerControls.classList.remove('hidden');
+    async function calculateTotalSize(sessionId) {
+        if (sessionId !== state.loadingSessionId) throw new Error("Session aborted");
+        loadingText.innerHTML = '正在计算音频总大小...';
+
+        const promises = state.tracks.map(track => 
+            fetch(track.file, { method: 'HEAD' })
+        );
+        const results = await Promise.allSettled(promises);
         
-        const extension = quality === 'hq' ? 'ogg' : 'm4a';
-        state.tracks.forEach(track => {
-            track.file = `${track.folder}/${track.baseName}.${extension}`;
-        });
+        if (sessionId !== state.loadingSessionId) throw new Error("Session aborted");
         
-        state.totalDownloadSize = (quality === 'hq') ? state.storedHqBytes : state.storedLqBytes;
-        initializeAudio();
+        let totalBytes = 0;
+        for (const result of results) {
+            if (result.status === 'fulfilled' && result.value.ok) {
+                const size = result.value.headers.get('content-length');
+                if (size) totalBytes += parseInt(size, 10);
+            }
+        }
+        
+        if (totalBytes === 0) {
+           console.warn("Could not determine total size. Progress bar may not be accurate.");
+        }
+        
+        state.totalDownloadSize = totalBytes;
+        updateLoadingProgress();
+    }
+    
+    function updateLoadingProgress() {
+        if (state.totalDownloadSize > 0) {
+            const downloadedMB = (state.downloadedBytes / 1024 / 1024).toFixed(1);
+            const totalMB = (state.totalDownloadSize / 1024 / 1024).toFixed(1);
+            loadingText.innerHTML = `正在加载音频 (${downloadedMB}/${totalMB}MB)`;
+        } else {
+            loadingText.innerHTML = '正在加载音频...';
+        }
+    }
+    
+    async function fetchTrackWithProgress(track, sessionId) {
+        if (sessionId !== state.loadingSessionId) throw new Error("Session aborted");
+
+        const response = await fetch(track.file);
+        if (!response.ok) throw new Error(`Failed to fetch ${track.file}`);
+
+        const reader = response.body.getReader();
+        const chunks = [];
+        
+        while (true) {
+            if (sessionId !== state.loadingSessionId) {
+                reader.cancel();
+                throw new Error("Session aborted");
+            }
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            chunks.push(value);
+            state.downloadedBytes += value.length;
+            if (sessionId === state.loadingSessionId) {
+                updateLoadingProgress();
+            }
+        }
+        
+        const blob = new Blob(chunks);
+        return URL.createObjectURL(blob);
     }
 
     // --- Audio Processing & Wavesurfer ---
 
-    async function initializeAudio() {
-        if (state.isInitialized) return;
+    async function initializeAudio(sessionId) {
+        if (sessionId !== state.loadingSessionId) throw new Error("Session aborted");
+
         state.isInitialized = true;
         
-        updatePlayPauseButton(true);
-        loadingText.innerHTML = `正在准备音频轨道...`;
+        state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        state.masterGainNode = state.audioContext.createGain();
+        state.masterAnalyserNode = state.audioContext.createAnalyser();
+        state.masterAnalyserNode.fftSize = 2048;
+        state.masterTimeDomainData = new Float32Array(state.masterAnalyserNode.fftSize);
+        state.masterGainNode.connect(state.masterAnalyserNode);
+        state.masterAnalyserNode.connect(state.audioContext.destination);
 
-        try {
-            state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const loadPromises = state.tracks.map(async (track) => {
+            if (sessionId !== state.loadingSessionId) throw new Error("Session aborted");
+
+            const blobUrl = await fetchTrackWithProgress(track, sessionId);
+            if (sessionId !== state.loadingSessionId) {
+                URL.revokeObjectURL(blobUrl);
+                throw new Error("Session aborted");
+            }
+            track.blobUrl = blobUrl;
+
+            const audioElement = new Audio();
+            audioElement.crossOrigin = "anonymous";
+            audioElement.src = blobUrl;
+            track.audioElement = audioElement;
+
+            const sourceNode = state.audioContext.createMediaElementSource(audioElement);
+            const gainNode = state.audioContext.createGain();
+            gainNode.gain.value = track.isMuted ? 0 : track.lastVolume;
+            const analyserNode = state.audioContext.createAnalyser();
+            analyserNode.fftSize = 2048;
+
+            sourceNode.connect(gainNode);
+            if (track.name === '节拍器') {
+                gainNode.connect(state.masterGainNode);
+                sourceNode.connect(analyserNode);
+            } else {
+                gainNode.connect(analyserNode);
+                analyserNode.connect(state.masterGainNode);
+            }
             
-            state.masterGainNode = state.audioContext.createGain();
-            state.masterAnalyserNode = state.audioContext.createAnalyser();
-            state.masterAnalyserNode.fftSize = 2048;
-            state.masterTimeDomainData = new Float32Array(state.masterAnalyserNode.fftSize);
-            state.masterGainNode.connect(state.masterAnalyserNode);
-            state.masterAnalyserNode.connect(state.audioContext.destination);
+            track.gainNode = gainNode;
+            track.analyserNode = analyserNode;
+            track.timeDomainData = new Float32Array(analyserNode.fftSize);
 
-            let tracksReadyForWaveform = 0;
-            const waveformTrackCount = state.tracks.filter(t => t.name !== '节拍器').length;
+            const metadataPromise = new Promise((resolve, reject) => {
+                audioElement.addEventListener('loadedmetadata', () => {
+                     if (sessionId !== state.loadingSessionId) return reject(new Error("Session aborted"));
+                    if (audioElement.duration > state.maxDuration) {
+                        state.maxDuration = audioElement.duration;
+                        masterProgress.max = state.maxDuration;
+                        totalDurationDisplay.textContent = formatTime(state.maxDuration);
+                    }
+                    resolve();
+                });
+            });
 
-            state.tracks.forEach((track) => {
-                const audioElement = new Audio();
-                audioElement.crossOrigin = "anonymous";
-                audioElement.src = track.file;
-                track.audioElement = audioElement;
-
-                const sourceNode = state.audioContext.createMediaElementSource(audioElement);
-                
-                const gainNode = state.audioContext.createGain();
-                gainNode.gain.value = track.isMuted ? 0 : track.lastVolume;
-                
-                const analyserNode = state.audioContext.createAnalyser();
-                analyserNode.fftSize = 2048;
-                
-                sourceNode.connect(gainNode);
-                if (track.name === '节拍器') {
-                    gainNode.connect(state.masterGainNode);
-                    sourceNode.connect(analyserNode);
-                } else {
-                    gainNode.connect(analyserNode);
-                    analyserNode.connect(state.masterGainNode);
-                }
-                
-                track.gainNode = gainNode;
-                track.analyserNode = analyserNode;
-                track.timeDomainData = new Float32Array(analyserNode.fftSize);
-
-                if (track.name !== '节拍器') {
+            let wavesurferPromise = Promise.resolve();
+            if (track.name !== '节拍器') {
+                wavesurferPromise = new Promise((resolve, reject) => {
+                    if (sessionId !== state.loadingSessionId) return reject(new Error("Session aborted"));
                     track.wavesurfer = WaveSurfer.create({
                         container: track.ui.waveformContainer,
                         waveColor: '#10B981',
@@ -246,43 +351,29 @@ document.addEventListener('DOMContentLoaded', () => {
                         height: 60,
                         cursorWidth: 2,
                         cursorColor: '#f07272',
-                        // minPxPerSec: 10,
                         media: audioElement,
-                        interact: true, // Allow interaction
+                        interact: true,
                     });
-
-                    // **FIX**: Use 'interaction' event to handle seeking on the waveform
-                    track.wavesurfer.on('interaction', (newTime) => {
-                        seekPlayerTo(newTime);
-                    });
-
-                    track.wavesurfer.on('ready', () => {
-                        tracksReadyForWaveform++;
-                        loadingText.innerHTML = `正在渲染波形图 (${tracksReadyForWaveform}/${waveformTrackCount})...`;
-                        if (tracksReadyForWaveform === waveformTrackCount) {
-                            allTracksReady();
-                        }
-                    });
-
-                }
-                
-                audioElement.addEventListener('loadedmetadata', () => {
-                    if (audioElement.duration > state.maxDuration) {
-                        state.maxDuration = audioElement.duration;
-                        masterProgress.max = state.maxDuration;
-                        totalDurationDisplay.textContent = formatTime(state.maxDuration);
-                    }
+                    track.wavesurfer.on('interaction', (newTime) => seekPlayerTo(newTime));
+                    track.wavesurfer.on('ready', resolve);
+                    track.wavesurfer.on('error', (err) => reject(err));
                 });
-            });
-
-        } catch (error) {
-            console.error("Audio initialization failed:", error);
-            handleLoadingError(error);
+            }
+            
+            await Promise.all([metadataPromise, wavesurferPromise]);
+        });
+        
+        loadingText.innerHTML = `正在渲染波形图...`;
+        await Promise.all(loadPromises);
+        
+        if (sessionId === state.loadingSessionId) {
+            allTracksReady();
         }
     }
 
     function allTracksReady() {
         mixerTracksContainer.classList.remove('opacity-50', 'pointer-events-none');
+        masterMeterContainer.classList.remove('hidden');
         playPauseBtn.disabled = false;
         updateAllTrackVolumes();
         updateMasterProgressFill();
@@ -311,7 +402,6 @@ document.addEventListener('DOMContentLoaded', () => {
             updatePlayPauseButton();
             state.animationFrameId = requestAnimationFrame(updateProgress);
         }).catch(error => {
-            // Ignore AbortError which can happen during normal seeking operations
             if (error.name !== 'AbortError') {
                 console.error("Playback failed", error);
             }
@@ -471,7 +561,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // --- Event Handlers ---
+    // --- More Event Handlers ---
     
     function handleVolumeChange(event, track) {
         const value = parseFloat(event.target.value);
@@ -504,16 +594,11 @@ document.addEventListener('DOMContentLoaded', () => {
         updateMasterProgressFill();
     }
 
-    // **FIX**: This now calls the robust seekPlayerTo function
     function handleMasterProgressChange() {
         hideProgressTooltip();
         seekPlayerTo(parseFloat(masterProgress.value));
     }
     
-    /**
-     * **FIX**: New robust function to handle all seeking operations.
-     * @param {number} seekTime - The time in seconds to seek to.
-     */
     function seekPlayerTo(seekTime) {
         const wasPlaying = state.isPlaying;
 
@@ -521,12 +606,10 @@ document.addEventListener('DOMContentLoaded', () => {
             pause();
         }
 
-        // Set the new time on all audio elements
         state.tracks.forEach(track => {
             track.audioElement.currentTime = seekTime;
         });
 
-        // Manually update master progress UI so it feels instant
         masterProgress.value = seekTime;
         currentTimeDisplay.textContent = formatTime(seekTime);
         updateMasterProgressFill();
@@ -571,7 +654,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Use the first track's audio element as the source of truth for time
         const firstAudio = state.tracks[0]?.audioElement;
         if (!firstAudio) return;
         const currentTime = firstAudio.currentTime;
@@ -724,28 +806,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Utilities ---
-
-    async function calculateTotalSize(extension, spanElement) {
-        let totalBytes = 0;
-        try {
-            const promises = state.currentSong.tracksData.map(track => {
-                const url = `${state.currentSong.folder}/${track.file}.${extension}`;
-                return fetch(url, { method: 'HEAD' });
-            });
-            const results = await Promise.allSettled(promises);
-            for (const result of results) {
-                if (result.status === 'fulfilled' && result.value.ok) {
-                    const size = result.value.headers.get('content-length');
-                    if (size) totalBytes += parseInt(size, 10);
-                }
-            }
-            spanElement.textContent = totalBytes > 0 ? `(${(totalBytes / 1024 / 1024).toFixed(1)}MB)` : `(未知大小)`;
-        } catch (error) {
-            console.warn(`Could not get total size for ${extension}:`, error);
-            spanElement.textContent = `(获取失败)`;
-        }
-        return totalBytes;
-    }
     
     function formatTime(seconds) {
         const secs = Math.floor(seconds);
