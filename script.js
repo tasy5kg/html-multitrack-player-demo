@@ -174,7 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const tracksData = state.currentSong.tracksData.map(track => ({
             name: track.name,
             baseName: track.file, 
-            defaultVolume: 75,
+            defaultVolume: track.name === '节拍器' ? 50 : 75, // Set metronome default volume to 50
             folder: state.currentSong.folder,
         }));
 
@@ -240,12 +240,22 @@ document.addEventListener('DOMContentLoaded', () => {
             state.tracks.forEach(track => {
                 const gainNode = state.audioContext.createGain();
                 gainNode.gain.value = track.isMuted ? 0 : track.lastVolume;
+                
                 const analyserNode = state.audioContext.createAnalyser();
                 analyserNode.fftSize = 2048;
                 
-                // Connect track: gain -> analyser -> masterGain
-                gainNode.connect(analyserNode);
-                analyserNode.connect(state.masterGainNode);
+                if (track.name === '节拍器') {
+                    // For metronome, analysis is independent of volume.
+                    // Audible path: source -> gainNode -> masterGainNode
+                    gainNode.connect(state.masterGainNode);
+                    // Analysis path: source -> analyserNode (at full volume)
+                    // The analyserNode does not need to connect to the destination to work.
+                } else {
+                    // For other tracks, analysis is post-volume.
+                    // Path: source -> gainNode -> analyserNode -> masterGainNode
+                    gainNode.connect(analyserNode);
+                    analyserNode.connect(state.masterGainNode);
+                }
                 
                 track.gainNode = gainNode;
                 track.analyserNode = analyserNode;
@@ -303,7 +313,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const blob = new Blob(chunks);
             const arrayBuffer = await blob.arrayBuffer();
             track.audioBuffer = await state.audioContext.decodeAudioData(arrayBuffer);
-            track.waveformData = generateWaveformData(track.audioBuffer);
+            if (track.name !== '节拍器') {
+                track.waveformData = generateWaveformData(track.audioBuffer);
+            }
 
             return track.audioBuffer.duration;
         });
@@ -322,7 +334,11 @@ document.addEventListener('DOMContentLoaded', () => {
         progressStatusContainer.classList.add('hidden');
         playerProgressContainer.classList.remove('hidden');
 
-        state.tracks.forEach(drawWaveform);
+        state.tracks.forEach(track => {
+            if (track.name !== '节拍器') {
+                drawWaveform(track);
+            }
+        });
     }
     
     /**
@@ -338,7 +354,17 @@ document.addEventListener('DOMContentLoaded', () => {
         state.tracks.forEach(track => {
             const source = state.audioContext.createBufferSource();
             source.buffer = track.audioBuffer;
-            source.connect(track.gainNode);
+            
+            if (track.name === '节拍器') {
+                // Audible path (respects volume slider)
+                source.connect(track.gainNode);
+                // Analysis path (always at 100% volume)
+                source.connect(track.analyserNode);
+            } else {
+                // Standard path for all other tracks
+                source.connect(track.gainNode);
+            }
+            
             source.start(0, state.startOffset);
             track.sourceNode = source;
         });
@@ -395,27 +421,23 @@ document.addEventListener('DOMContentLoaded', () => {
         mixerTracksContainer.classList.add('opacity-50', 'pointer-events-none');
 
         tracksData.forEach((trackData) => {
-            const { trackElement, uiComponents } = buildSingleTrackUI(trackData);
-            mixerTracksContainer.appendChild(trackElement);
-            
             const isMetronome = trackData.name === '节拍器';
+            const { trackElement, uiComponents } = buildSingleTrackUI(trackData, isMetronome);
+            mixerTracksContainer.appendChild(trackElement);
             
             const track = {
                 ...trackData,
                 lastVolume: trackData.defaultVolume / 100,
-                isMuted: isMetronome,
+                isMuted: isMetronome, // Metronome is muted by default
                 isSoloed: false,
                 ui: uiComponents,
             };
             
             state.tracks.push(track);
-            bindTrackEvents(track);
+            bindTrackEvents(track, isMetronome);
 
             // Initial UI state
             updateVolumeSliderFill(uiComponents.volumeSlider, trackData.defaultVolume);
-            if (isMetronome) {
-                uiComponents.muteBtn.classList.add('active');
-            }
         });
         
         // Hide all volume tooltips initially
@@ -429,41 +451,56 @@ document.addEventListener('DOMContentLoaded', () => {
     /**
      * Builds the DOM elements for a single track.
      * @param {Object} trackData - The data for one track.
+     * @param {boolean} isMetronome - Flag for metronome track.
      * @returns {{trackElement: HTMLElement, uiComponents: Object}}
      */
-    function buildSingleTrackUI(trackData) {
+    function buildSingleTrackUI(trackData, isMetronome) {
         const trackElement = document.createElement('div');
         trackElement.className = 'py-3';
-        
+    
         // Top Row: Label, Slider, Controls
         const topRow = document.createElement('div');
         topRow.className = 'flex items-center justify-between space-x-4 mb-2';
-        
+    
         const label = document.createElement('label');
         label.textContent = trackData.name;
         label.className = 'text-sm font-bold text-gray-700 w-28 truncate';
-
+    
         const { sliderWrapper, volumeSlider, volumeTooltip } = createVolumeSlider(trackData);
-        const { soloMuteContainer, muteBtn, soloBtn } = createControlButtons();
-        
-        topRow.append(label, sliderWrapper, soloMuteContainer);
-        
-        // Bottom Row: Waveform, Meter
-        const bottomRow = document.createElement('div');
-        bottomRow.className = 'flex items-center space-x-2';
-        
-        const waveformContainer = document.createElement('div');
-        waveformContainer.className = 'waveform-container flex-grow';
-        
-        const { meterWrapper, meterBar } = createLevelMeter();
-        
-        bottomRow.append(waveformContainer, meterWrapper);
-        trackElement.append(topRow, bottomRow);
-
-        return {
-            trackElement,
-            uiComponents: { volumeSlider, tooltip: volumeTooltip, meterBar, waveformContainer, muteBtn, soloBtn }
-        };
+    
+        let controlElements, meterElement, uiComponents = { volumeSlider, tooltip: volumeTooltip };
+    
+        if (isMetronome) {
+            const { toggleSwitch, toggleInput } = createToggleSwitch();
+            const { meterWrapper, meterBar } = createLevelMeter(true);
+            controlElements = document.createElement('div');
+            controlElements.className = 'flex items-center space-x-2 w-[96px] justify-end';
+            controlElements.append(toggleSwitch, meterWrapper);
+            
+            Object.assign(uiComponents, { toggleInput, meterBar });
+            
+            // Metronome doesn't have a bottom row
+            topRow.append(label, sliderWrapper, controlElements);
+            trackElement.append(topRow);
+        } else {
+            const { soloMuteContainer, muteBtn, soloBtn } = createControlButtons();
+            controlElements = soloMuteContainer;
+            Object.assign(uiComponents, { muteBtn, soloBtn });
+    
+            const bottomRow = document.createElement('div');
+            bottomRow.className = 'flex items-center space-x-2';
+            const waveformContainer = document.createElement('div');
+            waveformContainer.className = 'waveform-container flex-grow';
+            const { meterWrapper, meterBar } = createLevelMeter(false);
+            
+            Object.assign(uiComponents, { waveformContainer, meterBar });
+            
+            bottomRow.append(waveformContainer, meterWrapper);
+            topRow.append(label, sliderWrapper, controlElements);
+            trackElement.append(topRow, bottomRow);
+        }
+    
+        return { trackElement, uiComponents };
     }
     
     // --- UI Component Builders ---
@@ -495,10 +532,23 @@ document.addEventListener('DOMContentLoaded', () => {
         soloMuteContainer.append(muteBtn, soloBtn);
         return { soloMuteContainer, muteBtn, soloBtn };
     }
+    
+    function createToggleSwitch() {
+        const toggleSwitch = document.createElement('label');
+        toggleSwitch.className = 'toggle-switch';
+        const toggleInput = document.createElement('input');
+        toggleInput.type = 'checkbox';
+        toggleInput.className = 'toggle-switch-checkbox';
+        const slider = document.createElement('span');
+        slider.className = 'toggle-switch-slider';
+        toggleSwitch.append(toggleInput, slider);
+        return { toggleSwitch, toggleInput };
+    }
 
-    function createLevelMeter() {
+
+    function createLevelMeter(isMetronome = false) {
         const meterWrapper = document.createElement('div');
-        meterWrapper.className = 'vertical-meter-wrapper';
+        meterWrapper.className = isMetronome ? 'vertical-meter-wrapper metronome-meter' : 'vertical-meter-wrapper';
         const meterBar = document.createElement('div');
         meterBar.className = 'vertical-meter-bar';
         meterWrapper.appendChild(meterBar);
@@ -510,18 +560,22 @@ document.addEventListener('DOMContentLoaded', () => {
     /**
      * Binds events to a single track's UI elements.
      * @param {Object} track - The track object.
+     * @param {boolean} isMetronome - Flag for metronome track.
      */
-    function bindTrackEvents(track) {
-        const { volumeSlider, muteBtn, soloBtn, waveformContainer } = track.ui;
+    function bindTrackEvents(track, isMetronome) {
+        const { volumeSlider, waveformContainer } = track.ui;
         
         volumeSlider.addEventListener('input', e => handleVolumeChange(e, track));
         volumeSlider.addEventListener('mousedown', () => showTooltip(track.ui));
         volumeSlider.addEventListener('touchstart', () => showTooltip(track.ui), { passive: true });
         
-        muteBtn.addEventListener('click', () => handleMuteClick(track));
-        soloBtn.addEventListener('click', () => handleSoloClick(track));
-        
-        waveformContainer.addEventListener('click', e => handleWaveformClick(e, track, waveformContainer));
+        if (isMetronome) {
+            track.ui.toggleInput.addEventListener('change', () => handleMetronomeToggle(track));
+        } else {
+            track.ui.muteBtn.addEventListener('click', () => handleMuteClick(track));
+            track.ui.soloBtn.addEventListener('click', () => handleSoloClick(track));
+            waveformContainer.addEventListener('click', e => handleWaveformClick(e, track, waveformContainer));
+        }
     }
     
     // --- Event Handlers ---
@@ -547,7 +601,13 @@ document.addEventListener('DOMContentLoaded', () => {
         updateAllTrackVolumes();
     }
     
+    function handleMetronomeToggle(track) {
+        track.isMuted = !track.ui.toggleInput.checked;
+        updateAllTrackVolumes();
+    }
+    
     function handleWaveformClick(event, track, container) {
+        if (!container) return;
         const rect = container.getBoundingClientRect();
         const clickX = event.clientX - rect.left;
         const seekTime = (clickX / rect.width) * state.minDuration;
@@ -592,14 +652,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!state.audioContext) return;
 
         state.tracks.forEach(track => {
-            let finalVolume = 0;
-            if (state.isAnyTrackSoloed) {
-                if (track.isSoloed && !track.isMuted) {
-                    finalVolume = track.lastVolume;
-                }
+            let finalVolume;
+            if (track.name === '节拍器') {
+                // Metronome is independent of solo logic
+                finalVolume = track.isMuted ? 0 : track.lastVolume;
             } else {
-                if (!track.isMuted) {
-                    finalVolume = track.lastVolume;
+                // Regular track logic
+                finalVolume = 0;
+                if (state.isAnyTrackSoloed) {
+                    if (track.isSoloed && !track.isMuted) {
+                        finalVolume = track.lastVolume;
+                    }
+                } else {
+                    if (!track.isMuted) {
+                        finalVolume = track.lastVolume;
+                    }
                 }
             }
             if (track.gainNode) {
@@ -648,7 +715,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateLevelMeters() {
         state.tracks.forEach(track => {
             if (!track.analyserNode || !track.ui.meterBar) return;
-            updateSingleMeter(track.analyserNode, track.timeDomainData, track.ui.meterBar);
+            updateSingleMeter(track.analyserNode, track.timeDomainData, track.ui.meterBar, track);
         });
     }
 
@@ -664,9 +731,19 @@ document.addEventListener('DOMContentLoaded', () => {
      * Generic function to update a single level meter UI.
      * @param {AnalyserNode} analyserNode 
      * @param {Float32Array} timeDomainData 
-     * @param {HTMLElement} meterBar 
+     * @param {HTMLElement} meterBar
+     * @param {Object|null} track - The full track object, passed for special cases.
      */
-    function updateSingleMeter(analyserNode, timeDomainData, meterBar) {
+    function updateSingleMeter(analyserNode, timeDomainData, meterBar, track = null) {
+        const meterWrapper = meterBar.parentElement;
+        const isMetronomeMeter = meterWrapper.classList.contains('metronome-meter');
+
+        // If metronome is muted, force background color and exit.
+        if (isMetronomeMeter && track && track.isMuted) {
+            meterWrapper.style.backgroundColor = '#e5e7eb'; // background color
+            return;
+        }
+
         const MIN_DB = -60.0;
         analyserNode.getFloatTimeDomainData(timeDomainData);
         let peakAmplitude = 0.0;
@@ -674,17 +751,31 @@ document.addEventListener('DOMContentLoaded', () => {
             const absSample = Math.abs(sample);
             if (absSample > peakAmplitude) peakAmplitude = absSample;
         }
-        
+
         if (peakAmplitude === 0) {
-            meterBar.style.height = '0%';
+            if (isMetronomeMeter) {
+                meterWrapper.style.backgroundColor = '#e5e7eb'; // Reset to base color
+            } else {
+                meterBar.style.height = '0%';
+            }
             return;
         }
         
         const peakDb = 20 * Math.log10(peakAmplitude);
         const levelPercent = peakDb < MIN_DB ? 0 : Math.min(100, Math.max(0, ((((peakDb - MIN_DB) / -MIN_DB) ** 2) * 100) | 0));
         
-        meterBar.style.height = `${levelPercent}%`;
-        meterBar.style.backgroundColor = `rgb(0, 166, 62)`;
+        if (isMetronomeMeter) {
+            const fillColor = 'rgb(0, 166, 62)';
+            const bgColor = '#e5e7eb';
+            
+            meterWrapper.style.backgroundColor = levelPercent > 85 ? fillColor : bgColor;
+            meterBar.style.height = '0%'; // The inner bar is not used for the metronome
+
+        } else {
+            // Original logic for regular vertical meters
+            meterBar.style.height = `${levelPercent}%`;
+            meterBar.style.backgroundColor = `rgb(0, 166, 62)`;
+        }
     }
     
     // --- UI Update Functions ---
@@ -705,7 +796,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const fromColor = state.isPlaying ? 'bg-blue-500' : 'bg-amber-500';
         const toColor = state.isPlaying ? 'bg-amber-500' : 'bg-blue-500';
         const fromHover = state.isPlaying ? 'hover:bg-blue-600' : 'hover:bg-amber-600';
-        const toHover = state.isPlaying ? 'hover:bg-amber-600' : 'hover:bg-blue-600';
+        const toHover = state.isPlaying ? 'hover:bg-amber-600' : 'hover:bg-blue-500';
         
         playPauseBtn.classList.replace(fromColor, toColor);
         playPauseBtn.classList.replace(fromHover, toHover);
@@ -737,6 +828,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * @returns {Array<{min: number, max: number}>}
      */
     function generateWaveformData(audioBuffer) {
+        if (!audioBuffer) return [];
         const sampleInterval = 0.1; // 10 points per second
         const channelsData = Array.from({ length: audioBuffer.numberOfChannels }, (_, i) => audioBuffer.getChannelData(i));
         const samplesPerPoint = Math.floor(audioBuffer.sampleRate * sampleInterval);
@@ -768,7 +860,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function drawWaveform(track) {
         const { ui, waveformData } = track;
         const container = ui.waveformContainer;
-        if (!waveformData || waveformData.length === 0) return;
+        if (!container || !waveformData || waveformData.length === 0) return;
 
         const width = waveformData.length;
         const height = 100;
@@ -819,7 +911,7 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function updateWaveformProgressLine(currentTime) {
         state.tracks.forEach(track => {
-            if (!track.ui.progressLine || !track.waveformData || !track.audioBuffer) return;
+            if (!track.ui.progressLine || !track.waveformData || !track.audioBuffer || !track.ui.waveformContainer) return;
             
             const trackDuration = track.audioBuffer.duration;
             const progressPercent = Math.max(0, Math.min(1, currentTime / trackDuration));

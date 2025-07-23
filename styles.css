@@ -13,6 +13,8 @@
     --thumb-hover-bg: #84d77e;
     --mute-button-bg: #8b5cf6;
     --mute-button-border: #7c3aed;
+    --toggle-switch-bg-off: var(--volume-track-bg);
+    --toggle-switch-bg-on: var(--thumb-bg);
 }
 
 body {
@@ -278,6 +280,18 @@ input[type="range"].volume-slider:active::-moz-range-thumb {
     height: 60px;
 }
 
+/* Metronome specific styles */
+.vertical-meter-wrapper.metronome-meter {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    /* Makes it a circle */
+    background-color: #e5e7eb;
+    /* Default background color */
+    transition: background-color 0.05s ease-out;
+    /* Added transition */
+}
+
 
 /*
  * =============================================
@@ -311,4 +325,56 @@ input[type="range"].volume-slider:active::-moz-range-thumb {
     background-color: #f59e0b;
     color: white;
     border-color: #d97706;
+}
+
+
+/*
+ * =============================================
+ * Toggle Switch (for Metronome)
+ * =============================================
+ */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 28px;
+    flex-shrink: 0;
+}
+
+.toggle-switch-checkbox {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-switch-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--toggle-switch-bg-off);
+    transition: .4s;
+    border-radius: 28px;
+}
+
+.toggle-switch-slider:before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+.toggle-switch-checkbox:checked+.toggle-switch-slider {
+    background-color: var(--toggle-switch-bg-on);
+}
+
+.toggle-switch-checkbox:checked+.toggle-switch-slider:before {
+    transform: translateX(22px);
 }
