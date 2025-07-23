@@ -1,8 +1,10 @@
-### 演示地址
+一个多轨音频播放器演示网页。
 
-#### uniCloud（中国大陆地区访问更快）： https://env-00jxtt59sy4k-static.normal.cloudstatic.cn/
+演示地址：
 
-#### GitHub Pages： https://tasy5kg.github.io/html-multitrack-player-demo/
+https://env-00jxtt59sy4k-static.normal.cloudstatic.cn （中国大陆地区访问更快）
+
+https://tasy5kg.github.io/html-multitrack-player-demo
 
 ---
 
