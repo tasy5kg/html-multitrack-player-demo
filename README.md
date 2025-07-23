@@ -4,15 +4,15 @@
 
 演示地址：
 
-https://env-00jxtt59sy4k-static.normal.cloudstatic.cn
+https://env-00jxtt59sy4k-static.normal.cloudstatic.cn/html-multitrack-player-demo/
 
-https://tasy5kg.github.io/html-multitrack-player-demo
+https://tasy5kg.github.io/html-multitrack-player-demo/
 
 ---
 
 源码：
 
-https://github.com/tasy5kg/html-multitrack-player-demo
+https://github.com/tasy5kg/html-multitrack-player-demo/
 
 ---
 
