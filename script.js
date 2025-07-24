@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+    
+    const RESOURCE_BASE_URL = '';
 
     // --- DOM Elements ---
     const songSelect = document.getElementById('song-select');
@@ -143,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 modal.classList.remove('hidden');
 
                 // 歌词文件路径
-                const lyricsPath = `${song.folder}/${song.lyrics}`;
+                const lyricsPath = `${RESOURCE_BASE_URL}/${song.folder}/${song.lyrics}`;
                 fetch(lyricsPath)
                     .then(res => {
                         if (!res.ok) throw new Error('歌词加载失败');
@@ -227,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const tracksData = state.currentSong.tracksData.map(track => ({
             name: track.name,
-            file: `${state.currentSong.folder}/${track.file}`,
+            file: `${RESOURCE_BASE_URL}/${state.currentSong.folder}/${track.file}`,
             defaultVolume: track.name === '节拍器' ? 50 : 75,
         }));
 

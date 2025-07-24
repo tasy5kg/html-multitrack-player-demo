@@ -4,9 +4,9 @@
 
 演示地址：
 
-https://env-00jxtt59sy4k-static.normal.cloudstatic.cn/html-multitrack-player-demo/
-
 https://tasy5kg.github.io/html-multitrack-player-demo/
+
+https://mixmusic.tasy5kg.cn/
 
 ---
 
