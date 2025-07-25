@@ -1,3 +1,5 @@
+import songsListData from './songs.json';
+
 document.addEventListener('DOMContentLoaded', () => {
     
     const RESOURCE_BASE_URL = '';
@@ -52,24 +54,21 @@ document.addEventListener('DOMContentLoaded', () => {
         bindGlobalEvents();
     }
 
-    async function loadSongsList() {
-        try {
-            const response = await fetch('songs.json');
-            if (!response.ok) throw new Error('Failed to load songs list.');
-            state.songsList = await response.json();
-
-            songSelect.innerHTML = '<option value="" selected disabled>请选择歌曲</option>';
-            state.songsList.forEach((song, index) => {
-                const option = document.createElement('option');
-                option.value = index;
-                option.textContent = song.name;
-                songSelect.appendChild(option);
-            });
-        } catch (error) {
-            console.error(error);
-            songSelect.innerHTML = '<option value="">加载失败</option>';
-        }
+function loadSongsList() {
+    try {
+        state.songsList = songsListData;
+        songSelect.innerHTML = '<option value="" selected disabled>请选择歌曲</option>';
+        state.songsList.forEach((song, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            option.textContent = song.name;
+            songSelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error('处理歌曲列表时出错:', error);
+        songSelect.innerHTML = '<option value="">加载失败</option>';
     }
+}
 
     function bindGlobalEvents() {
         songSelect.addEventListener('change', handleSongSelection);
