@@ -1,16 +1,8 @@
-一个多轨音频播放器演示网页。
+一个网页多轨音频播放器。
 
----
+演示地址：https://mixmusic.tasy5kg.cn/
 
-演示地址：
-
-https://mixmusic.tasy5kg.cn/
-
----
-
-源码：
-
-https://github.com/tasy5kg/html-multitrack-player-demo/
+源码：https://github.com/tasy5kg/html-multitrack-player-demo/
 
 ---
 
