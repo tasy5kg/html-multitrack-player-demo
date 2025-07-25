@@ -4,8 +4,6 @@
 
 演示地址：
 
-https://tasy5kg.github.io/html-multitrack-player-demo/
-
 https://mixmusic.tasy5kg.cn/
 
 ---
