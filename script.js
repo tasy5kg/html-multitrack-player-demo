@@ -1,7 +1,7 @@
 import songsListData from './songs.json';
 
 document.addEventListener('DOMContentLoaded', () => {
-    
+
     const RESOURCE_BASE_URL = '';
 
     // --- DOM Elements ---
@@ -54,21 +54,21 @@ document.addEventListener('DOMContentLoaded', () => {
         bindGlobalEvents();
     }
 
-function loadSongsList() {
-    try {
-        state.songsList = songsListData;
-        songSelect.innerHTML = '<option value="" selected disabled>请选择歌曲</option>';
-        state.songsList.forEach((song, index) => {
-            const option = document.createElement('option');
-            option.value = index;
-            option.textContent = song.name;
-            songSelect.appendChild(option);
-        });
-    } catch (error) {
-        console.error('处理歌曲列表时出错:', error);
-        songSelect.innerHTML = '<option value="">加载失败</option>';
+    function loadSongsList() {
+        try {
+            state.songsList = songsListData;
+            songSelect.innerHTML = '<option value="" selected disabled>请选择歌曲</option>';
+            state.songsList.forEach((song, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = song.name;
+                songSelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error('处理歌曲列表时出错:', error);
+            songSelect.innerHTML = '<option value="">加载失败</option>';
+        }
     }
-}
 
     function bindGlobalEvents() {
         songSelect.addEventListener('change', handleSongSelection);
@@ -112,6 +112,26 @@ function loadSongsList() {
         const selectedIndex = songSelect.value;
         if (state.songsList[selectedIndex]) {
             state.currentSong = state.songsList[selectedIndex];
+            fetch('./log.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    songId: state.currentSong.folder
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status !== 'success') {
+                        console.error('统计记录失败:', data.message);
+                    } else {
+                        console.log('统计记录成功。');
+                    }
+                })
+                .catch(error => {
+                    console.error('发送统计数据时出错:', error);
+                });
             songSelect.blur();
             const songInfoDiv = document.getElementById('song-info');
             if (state.currentSong.bpm && state.currentSong.song_key) {
