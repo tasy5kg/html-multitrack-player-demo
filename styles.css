@@ -366,10 +366,10 @@ input[type="range"].volume-slider:active::-moz-range-thumb {
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-.toggle-switch-checkbox:checked+.toggle-switch-slider {
+.toggle-switch-checkbox:checked + .toggle-switch-slider {
     background-color: var(--toggle-switch-bg-on);
 }
 
-.toggle-switch-checkbox:checked+.toggle-switch-slider:before {
+.toggle-switch-checkbox:checked + .toggle-switch-slider:before {
     transform: translateX(22px);
 }

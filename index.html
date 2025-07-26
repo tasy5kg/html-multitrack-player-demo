@@ -3,127 +3,131 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
     <title>多轨音乐播放器</title>
-    <link rel="stylesheet" href="styles.css">
+    <link href="styles.css" rel="stylesheet">
     <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
 </head>
 
 <body class="bg-slate-100 font-sans flex items-center justify-center min-h-screen p-4">
 
-    <main class="w-full max-w-md mx-auto bg-white rounded-2xl shadow-lg overflow-hidden">
-        <header class="px-6 pt-6 pb-0">
-            <div class="text-center">
-                <h1 class="text-xl font-bold text-slate-800 mb-0">多轨音乐播放器</h1>
-            </div>
-        </header>
+<main class="w-full max-w-md mx-auto bg-white rounded-2xl shadow-lg overflow-hidden">
+    <header class="px-6 pt-6 pb-0">
+        <div class="text-center">
+            <h1 class="text-xl font-bold text-slate-800 mb-0">多轨音乐播放器</h1>
+        </div>
+    </header>
 
-        <section class="px-6 py-0 flex flex-col justify-center">
-            <div id="song-selection-container"
-                class="h-full flex flex-col items-center py-0 justify-center text-center">
-                <select id="song-select" class="w-full max-w-xs mx-auto my-4" aria-label="选择歌曲">
-                    <option value="" selected disabled>请选择歌曲</option>
-                </select>
-                <div id="song-info" class="hidden text-sm text-slate-500 mt-[-0.5rem] mb-1"></div>
-                <div id="lyrics-modal"
-                    class="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex items-center justify-center z-50 hidden">
-                    <div class="bg-white rounded-lg shadow-lg p-6 max-w-lg w-full relative">
-                        <button id="close-lyrics-modal"
-                            class="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl font-bold">×</button>
-                        <h2 class="text-lg font-bold mb-2">歌词</h2>
-                        <pre id="lyrics-content"
-                            class="whitespace-pre-wrap text-slate-700 text-sm max-h-[60vh] overflow-y-auto"></pre>
-                    </div>
-                </div>
-            </div>
-
-            <div id="main-player-controls" class="hidden mt-2 mb-4">
-                <div class="flex items-center space-x-4 ">
-                    <button id="play-pause-btn"
-                        class="flex-shrink-0 w-12 h-12 my-1.5 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-full transition-all duration-200 flex items-center justify-center text-lg shadow disabled:bg-slate-400 disabled:cursor-not-allowed"
-                        aria-label="播放/暂停">
-                        <svg id="loading-icon" class="animate-spin h-7 w-7 text-white hidden"
-                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" role="status"
-                            aria-label="加载中">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
-                            </circle>
-                            <path class="opacity-75" fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                            </path>
-                        </svg>
-                        <svg id="error-icon" class="hidden h-7 w-7 text-white" xmlns="http://www.w3.org/2000/svg"
-                            fill="none" viewBox="0 0 24 24" stroke="currentColor" role="alert" aria-label="错误">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <svg id="play-icon" xmlns="http://www.w3.org/2000/svg" width="28" height="28"
-                            fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M8 5v14l11-7z"></path>
-                        </svg>
-                        <svg id="pause-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="28" height="28"
-                            fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path>
-                        </svg>
+    <section class="px-6 py-0 flex flex-col justify-center">
+        <div class="h-full flex flex-col items-center py-0 justify-center text-center"
+             id="song-selection-container">
+            <select aria-label="选择歌曲" class="w-full max-w-xs mx-auto my-4" id="song-select">
+                <option disabled selected value="">请选择歌曲</option>
+            </select>
+            <div class="hidden text-sm text-slate-500 mt-[-0.5rem] mb-1" id="song-info"></div>
+            <div class="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex items-center justify-center z-50 hidden"
+                 id="lyrics-modal">
+                <div class="bg-white rounded-lg shadow-lg p-6 max-w-lg w-full relative">
+                    <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl font-bold"
+                            id="close-lyrics-modal">×
                     </button>
-
-                    <div class="w-full flex-grow h-60px">
-                        <div id="progress-status-container"
-                            class="text-center py-2 h-[34px] flex items-center justify-center">
-                            <div id="loading-text" class="text-sm text-slate-500"></div>
-                            <div id="error-text" class="hidden text-sm text-red-500">
-                                音频资源加载失败，<button id="retry-load-btn" class="font-bold underline">点击重试</button>。
-                            </div>
-                        </div>
-
-                        <div id="player-progress-container" class="hidden relative h-60px">
-                            <div id="progress-tooltip"
-                                class="absolute top-[-30px] bg-slate-800 text-white text-xs rounded py-1 px-2 pointer-events-none opacity-0 transition-opacity duration-200"
-                                role="tooltip">00:00</div>
-                            <input type="range" id="master-progress" class="w-full" min="0" max="100" value="0"
-                                aria-label="主播放进度">
-                            <div class="flex justify-between items-center text-xs text-slate-500 px-1 mt-1"
-                                aria-hidden="true">
-                                <span id="current-time">00:00</span>
-                                <span id="total-duration">--:--</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="master-meter-container" class="flex-shrink-0">
-                        <div class="vertical-meter-wrapper master-meter">
-                            <div id="master-meter-bar" class="vertical-meter-bar"></div>
-                        </div>
-                    </div>
-
+                    <h2 class="text-lg font-bold mb-2">歌词</h2>
+                    <pre class="whitespace-pre-wrap text-slate-700 text-sm max-h-[60vh] overflow-y-auto"
+                         id="lyrics-content"></pre>
                 </div>
             </div>
-        </section>
+        </div>
 
-        <hr class="border-slate-200">
+        <div class="hidden mt-2 mb-4" id="main-player-controls">
+            <div class="flex items-center space-x-4 ">
+                <button aria-label="播放/暂停"
+                        class="flex-shrink-0 w-12 h-12 my-1.5 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-full transition-all duration-200 flex items-center justify-center text-lg shadow disabled:bg-slate-400 disabled:cursor-not-allowed"
+                        id="play-pause-btn">
+                    <svg aria-label="加载中" class="animate-spin h-7 w-7 text-white hidden"
+                         fill="none" id="loading-icon" role="status" viewBox="0 0 24 24"
+                         xmlns="http://www.w3.org/2000/svg">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              fill="currentColor">
+                        </path>
+                    </svg>
+                    <svg aria-label="错误" class="hidden h-7 w-7 text-white" fill="none"
+                         id="error-icon" role="alert" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"
+                              stroke-width="2"/>
+                    </svg>
+                    <svg fill="currentColor" height="28" id="play-icon" viewBox="0 0 24 24"
+                         width="28" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M8 5v14l11-7z"></path>
+                    </svg>
+                    <svg class="hidden" fill="currentColor" height="28" id="pause-icon" viewBox="0 0 24 24"
+                         width="28" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path>
+                    </svg>
+                </button>
 
-        <section id="mixer-container" class="px-6">
-            <div id="mixer-tracks" class="divide-y divide-slate-200">
+                <div class="w-full flex-grow h-60px">
+                    <div class="text-center py-2 h-[34px] flex items-center justify-center"
+                         id="progress-status-container">
+                        <div class="text-sm text-slate-500" id="loading-text"></div>
+                        <div class="hidden text-sm text-red-500" id="error-text">
+                            音频资源加载失败，
+                            <button class="font-bold underline" id="retry-load-btn">点击重试</button>
+                            。
+                        </div>
+                    </div>
+
+                    <div class="hidden relative h-60px" id="player-progress-container">
+                        <div class="absolute top-[-30px] bg-slate-800 text-white text-xs rounded py-1 px-2 pointer-events-none opacity-0 transition-opacity duration-200"
+                             id="progress-tooltip"
+                             role="tooltip">00:00
+                        </div>
+                        <input aria-label="主播放进度" class="w-full" id="master-progress" max="100" min="0" type="range"
+                               value="0">
+                        <div aria-hidden="true"
+                             class="flex justify-between items-center text-xs text-slate-500 px-1 mt-1">
+                            <span id="current-time">00:00</span>
+                            <span id="total-duration">--:--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex-shrink-0" id="master-meter-container">
+                    <div class="vertical-meter-wrapper master-meter">
+                        <div class="vertical-meter-bar" id="master-meter-bar"></div>
+                    </div>
+                </div>
+
             </div>
-        </section>
+        </div>
+    </section>
 
-        <hr class="border-slate-200">
+    <hr class="border-slate-200">
 
-        <footer class="px-6 py-6">
-            <div class="text-center text-xs text-slate-400">
-                <p class="mt">音乐轨道由 AI 提取，可能存在瑕疵</p>
-                <p class="mt-1">欢迎关注我的微信公众号：光光可爱小仙女</p>
-                <p class="mt-1">音频素材仅作功能演示，如有侵权请联系删除</p>
-                <!--                 <p class="mt-2">
-                    <a href="https://github.com/tasy5kg/html-multitrack-player-demo" target="_blank"
-                        rel="noopener noreferrer" class="text-blue-500 hover:text-blue-600 underline">
-                        在 GitHub 上查看
-                    </a>
-                </p> -->
-            </div>
-        </footer>
-    </main>
+    <section class="px-6" id="mixer-container">
+        <div class="divide-y divide-slate-200" id="mixer-tracks">
+        </div>
+    </section>
 
-    <script type="module" src="/script.js"></script>
+    <hr class="border-slate-200">
+
+    <footer class="px-6 py-6">
+        <div class="text-center text-xs text-slate-400">
+            <p class="mt">音乐轨道由 AI 提取，可能存在瑕疵</p>
+            <p class="mt-1">欢迎关注我的微信公众号：光光可爱小仙女</p>
+            <p class="mt-1">音频素材仅作功能演示，如有侵权请联系删除</p>
+            <!--                 <p class="mt-2">
+                <a href="https://github.com/tasy5kg/html-multitrack-player-demo" target="_blank"
+                    rel="noopener noreferrer" class="text-blue-500 hover:text-blue-600 underline">
+                    在 GitHub 上查看
+                </a>
+            </p> -->
+        </div>
+    </footer>
+</main>
+
+<script src="/script.js" type="module"></script>
 </body>
 
 </html>

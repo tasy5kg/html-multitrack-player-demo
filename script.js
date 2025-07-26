@@ -3,11 +3,7 @@ import songsListData from './songs.json';
 document.addEventListener('DOMContentLoaded', () => {
 
     const RESOURCE_BASE_URL = '';
-
-    const AUDIO_RESOURCE_SERVERS = [
-        'https://mixmusic-1302021366.cos.ap-chengdu.myqcloud.com',
-        ''
-    ];
+    const AUDIO_RESOURCE_SERVERS = ['https://mixmusic-1302021366.cos.ap-chengdu.myqcloud.com', ''];
 
     // --- DOM Elements ---
     const songSelect = document.getElementById('song-select');
@@ -84,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
         masterProgress.addEventListener('change', handleMasterProgressChange);
         masterProgress.addEventListener('mousedown', () => state.isSeeking = true);
         masterProgress.addEventListener('mouseup', () => state.isSeeking = false);
-        masterProgress.addEventListener('touchstart', () => state.isSeeking = true, { passive: true });
+        masterProgress.addEventListener('touchstart', () => state.isSeeking = true, {passive: true});
         masterProgress.addEventListener('touchend', () => state.isSeeking = false);
 
         document.addEventListener('keydown', handleKeyPress);
@@ -94,26 +90,19 @@ document.addEventListener('DOMContentLoaded', () => {
         let lastError = null;
 
         for (const server of AUDIO_RESOURCE_SERVERS) {
-            // 在每次尝试前检查加载会话是否已被中止
             if (sessionId !== state.loadingSessionId) throw new Error("Session aborted");
-
-            // 构建完整的资源 URL
             const url = server ? `${server}/${relativePath}` : relativePath;
-
             try {
                 const response = await fetch(url, options);
                 if (!response.ok) {
                     throw new Error(`请求失败，状态码: ${response.status}`);
                 }
-                // 加载成功，返回响应对象
                 return response;
             } catch (error) {
                 console.warn(`从服务器 [${server || '当前网站'}] 加载 ${relativePath} 失败，尝试下一个...`, error.message);
                 lastError = error;
             }
         }
-
-        // 如果所有服务器都尝试失败，则抛出最后的错误
         console.error(`所有备用服务器均无法加载资源: ${relativePath}`);
         throw lastError;
     }
@@ -146,11 +135,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (state.songsList[selectedIndex]) {
             state.currentSong = state.songsList[selectedIndex];
             fetch('./log.php', {
-                method: 'POST',
-                headers: {
+                method: 'POST', headers: {
                     'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
+                }, body: JSON.stringify({
                     songId: state.currentSong.folder
                 })
             })
@@ -188,6 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     };
                 }
             }, 0);
+
             // 歌词弹窗相关逻辑
             function showLyricsModal(song) {
                 const modal = document.getElementById('lyrics-modal');
@@ -310,9 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sessionId !== state.loadingSessionId) throw new Error("Session aborted");
         loadingText.innerHTML = '正在计算音频总大小...';
 
-        const promises = state.tracks.map(track =>
-            fetchWithFallback(track.file, { method: 'HEAD' }, sessionId)
-        );
+        const promises = state.tracks.map(track => fetchWithFallback(track.file, {method: 'HEAD'}, sessionId));
         const results = await Promise.allSettled(promises);
 
         if (sessionId !== state.loadingSessionId) throw new Error("Session aborted");
@@ -358,7 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 reader.cancel();
                 throw new Error("Session aborted");
             }
-            const { done, value } = await reader.read();
+            const {done, value} = await reader.read();
             if (done) break;
 
             chunks.push(value);
@@ -443,7 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         progressColor: '#047857',
                         height: 60,
                         cursorWidth: 1,
-                        cursorColor: '#f43f5e',   // A contrasting cursor color
+                        cursorColor: '#f43f5e',
                         media: audioElement,
                         interact: true,
                     });
@@ -523,7 +509,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         tracksData.forEach((trackData) => {
             const isMetronome = trackData.name === '节拍器';
-            const { trackElement, uiComponents } = buildSingleTrackUI(trackData, isMetronome);
+            const {trackElement, uiComponents} = buildSingleTrackUI(trackData, isMetronome);
             mixerTracksContainer.appendChild(trackElement);
 
             const track = {
@@ -555,45 +541,45 @@ document.addEventListener('DOMContentLoaded', () => {
         label.textContent = trackData.name;
         label.className = 'text-sm font-bold text-slate-700 w-28 truncate';
 
-        const { sliderWrapper, volumeSlider, volumeTooltip } = createVolumeSlider(trackData);
+        const {sliderWrapper, volumeSlider, volumeTooltip} = createVolumeSlider(trackData);
 
-        let controlElements, uiComponents = { volumeSlider, tooltip: volumeTooltip };
+        let controlElements, uiComponents = {volumeSlider, tooltip: volumeTooltip};
 
         if (isMetronome) {
-            const { toggleSwitch, toggleInput } = createToggleSwitch();
-            const { meterWrapper, meterBar } = createLevelMeter(true);
+            const {toggleSwitch, toggleInput} = createToggleSwitch();
+            const {meterWrapper, meterBar} = createLevelMeter(true);
             controlElements = document.createElement('div');
             controlElements.className = 'flex items-center space-x-2 w-[96px] justify-end';
             controlElements.append(toggleSwitch, meterWrapper);
-            Object.assign(uiComponents, { toggleInput, meterBar });
+            Object.assign(uiComponents, {toggleInput, meterBar});
             topRow.append(label, sliderWrapper, controlElements);
             trackElement.append(topRow);
         } else {
-            const { soloMuteContainer, muteBtn, soloBtn } = createControlButtons();
+            const {soloMuteContainer, muteBtn, soloBtn} = createControlButtons();
             controlElements = soloMuteContainer;
-            Object.assign(uiComponents, { muteBtn, soloBtn });
+            Object.assign(uiComponents, {muteBtn, soloBtn});
 
             const bottomRow = document.createElement('div');
             bottomRow.className = 'flex items-center space-x-2';
             const waveformContainer = document.createElement('div');
             waveformContainer.className = 'waveform-container flex-grow';
-            const { meterWrapper, meterBar } = createLevelMeter(false);
+            const {meterWrapper, meterBar} = createLevelMeter(false);
 
-            Object.assign(uiComponents, { waveformContainer, meterBar });
+            Object.assign(uiComponents, {waveformContainer, meterBar});
 
             bottomRow.append(waveformContainer, meterWrapper);
             topRow.append(label, sliderWrapper, controlElements);
             trackElement.append(topRow, bottomRow);
         }
 
-        return { trackElement, uiComponents };
+        return {trackElement, uiComponents};
     }
 
     function createVolumeSlider(trackData) {
         const sliderWrapper = document.createElement('div');
         sliderWrapper.className = 'volume-slider-wrapper relative flex-grow h-[20px] flex items-center';
         const volumeSlider = document.createElement('input');
-        Object.assign(volumeSlider, { type: 'range', min: 0, max: 100, value: trackData.defaultVolume });
+        Object.assign(volumeSlider, {type: 'range', min: 0, max: 100, value: trackData.defaultVolume});
         volumeSlider.className = 'volume-slider w-full';
 
         const volumeTooltip = document.createElement('div');
@@ -601,7 +587,7 @@ document.addEventListener('DOMContentLoaded', () => {
         volumeTooltip.textContent = `${trackData.defaultVolume}%`;
 
         sliderWrapper.append(volumeSlider, volumeTooltip);
-        return { sliderWrapper, volumeSlider, volumeTooltip };
+        return {sliderWrapper, volumeSlider, volumeTooltip};
     }
 
     function createControlButtons() {
@@ -614,7 +600,7 @@ document.addEventListener('DOMContentLoaded', () => {
         soloBtn.textContent = '独奏';
         soloBtn.className = 'control-button solo-button';
         soloMuteContainer.append(muteBtn, soloBtn);
-        return { soloMuteContainer, muteBtn, soloBtn };
+        return {soloMuteContainer, muteBtn, soloBtn};
     }
 
     function createToggleSwitch() {
@@ -626,7 +612,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const slider = document.createElement('span');
         slider.className = 'toggle-switch-slider';
         toggleSwitch.append(toggleInput, slider);
-        return { toggleSwitch, toggleInput };
+        return {toggleSwitch, toggleInput};
     }
 
     function createLevelMeter(isMetronome = false) {
@@ -635,16 +621,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const meterBar = document.createElement('div');
         meterBar.className = 'vertical-meter-bar';
         meterWrapper.appendChild(meterBar);
-        return { meterWrapper, meterBar };
+        return {meterWrapper, meterBar};
     }
 
     // --- Event Binding ---
 
     function bindTrackEvents(track, isMetronome) {
-        const { volumeSlider } = track.ui;
+        const {volumeSlider} = track.ui;
         volumeSlider.addEventListener('input', e => handleVolumeChange(e, track));
         volumeSlider.addEventListener('mousedown', () => showTooltip(track.ui));
-        volumeSlider.addEventListener('touchstart', () => showTooltip(track.ui), { passive: true });
+        volumeSlider.addEventListener('touchstart', () => showTooltip(track.ui), {passive: true});
 
         if (isMetronome) {
             track.ui.toggleInput.addEventListener('change', () => handleMetronomeToggle(track));
@@ -818,20 +804,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (isMetronomeMeter) {
             const isMuted = track.isMuted;
-            const baseColor = rootStyles.getPropertyValue('--color-border').trim();
-            let finalColor = baseColor;
-
-            // 当检测到节拍信号时
+            let finalColor = rootStyles.getPropertyValue('--color-border').trim();
             if (levelPercent > 85) {
-                if (isMuted) {
-                    // 如果是静音状态，使用紫色
-                    finalColor = rootStyles.getPropertyValue('--color-accent-mute').trim();
-                } else {
-                    // 如果是激活状态，使用绿色
-                    finalColor = rootStyles.getPropertyValue('--color-success').trim();
-                }
+                finalColor = isMuted ? rootStyles.getPropertyValue('--color-accent-mute').trim() : rootStyles.getPropertyValue('--color-success').trim();
             }
-
             meterWrapper.style.backgroundColor = finalColor;
             meterBar.style.height = '0%'; // 节拍器指示器本身没有高度
         } else {
@@ -884,8 +860,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Tooltips ---
 
-    function showTooltip(ui) { ui.tooltip.style.opacity = '1'; updateTooltip(ui); }
-    function hideTooltip(ui) { ui.tooltip.style.opacity = '0'; }
+    function showTooltip(ui) {
+        ui.tooltip.style.opacity = '1';
+        updateTooltip(ui);
+    }
+
+    function hideTooltip(ui) {
+        ui.tooltip.style.opacity = '0';
+    }
+
     function updateTooltip(ui) {
         const slider = ui.volumeSlider;
         const value = slider.value;
@@ -903,7 +886,11 @@ document.addEventListener('DOMContentLoaded', () => {
         progressTooltip.style.opacity = '1';
         updateProgressTooltip();
     }
-    function hideProgressTooltip() { progressTooltip.style.opacity = '0'; }
+
+    function hideProgressTooltip() {
+        progressTooltip.style.opacity = '0';
+    }
+
     function updateProgressTooltip() {
         if (!progressTooltip) return;
         const val = masterProgress.value;
