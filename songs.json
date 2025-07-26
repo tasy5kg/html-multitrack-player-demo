@@ -5,6 +5,7 @@
     "bpm": 68,
     "song_key": "D",
     "lyrics": "歌词.txt",
+    "enabled": true,
     "tracksData": [
       {
         "name": "主唱",
@@ -42,6 +43,7 @@
     "bpm": 126,
     "song_key": "D",
     "lyrics": "歌词.txt",
+    "enabled": true,
     "tracksData": [
       {
         "name": "主唱",
@@ -83,6 +85,7 @@
     "bpm": 122,
     "song_key": "Gb",
     "lyrics": "歌词.txt",
+    "enabled": true,
     "tracksData": [
       {
         "name": "主唱",
@@ -128,6 +131,7 @@
     "bpm": 123,
     "song_key": "C",
     "lyrics": "歌词.txt",
+    "enabled": true,
     "tracksData": [
       {
         "name": "主唱",
@@ -169,6 +173,7 @@
     "bpm": 100,
     "song_key": "Dm",
     "lyrics": "歌词.txt",
+    "enabled": true,
     "tracksData": [
       {
         "name": "人声",
@@ -210,6 +215,7 @@
     "bpm": 73,
     "song_key": "Db",
     "lyrics": "歌词.txt",
+    "enabled": true,
     "tracksData": [
       {
         "name": "主唱",
@@ -255,6 +261,7 @@
     "bpm": 135,
     "song_key": "G",
     "lyrics": "歌词.txt",
+    "enabled": false,
     "tracksData": [
       {
         "name": "人声",
@@ -304,6 +311,7 @@
     "bpm": 80,
     "song_key": "C",
     "lyrics": "歌词.txt",
+    "enabled": true,
     "tracksData": [
       {
         "name": "人声",
@@ -341,6 +349,7 @@
     "bpm": 64,
     "song_key": "B",
     "lyrics": "歌词.txt",
+    "enabled": true,
     "tracksData": [
       {
         "name": "主唱",
@@ -390,6 +399,7 @@
     "bpm": 56,
     "song_key": "C",
     "lyrics": "歌词.txt",
+    "enabled": true,
     "tracksData": [
       {
         "name": "人声",
@@ -427,6 +437,7 @@
     "bpm": 75,
     "song_key": "Eb",
     "lyrics": "歌词.txt",
+    "enabled": true,
     "tracksData": [
       {
         "name": "主唱",
@@ -472,6 +483,7 @@
     "bpm": 75,
     "song_key": "A",
     "lyrics": "歌词.txt",
+    "enabled": true,
     "tracksData": [
       {
         "name": "主唱",
@@ -517,6 +529,7 @@
     "bpm": 85,
     "song_key": "Eb",
     "lyrics": "歌词.txt",
+    "enabled": true,
     "tracksData": [
       {
         "name": "主唱",
@@ -562,6 +575,7 @@
     "bpm": 72,
     "song_key": "D",
     "lyrics": "歌词.txt",
+    "enabled": true,
     "tracksData": [
       {
         "name": "主唱",
@@ -603,6 +617,7 @@
     "bpm": 80,
     "song_key": "Db",
     "lyrics": "歌词.txt",
+    "enabled": true,
     "tracksData": [
       {
         "name": "主唱",
@@ -644,6 +659,7 @@
     "bpm": 70,
     "song_key": "Bm",
     "lyrics": "歌词.txt",
+    "enabled": true,
     "tracksData": [
       {
         "name": "琵琶",
@@ -677,6 +693,7 @@
     "bpm": 75,
     "song_key": "Ab",
     "lyrics": "歌词.txt",
+    "enabled": true,
     "tracksData": [
       {
         "name": "主唱",
@@ -722,6 +739,7 @@
     "bpm": 68,
     "song_key": "G",
     "lyrics": "歌词.txt",
+    "enabled": true,
     "tracksData": [
       {
         "name": "主唱",
@@ -763,6 +781,7 @@
     "bpm": 81,
     "song_key": "Gb",
     "lyrics": "歌词.txt",
+    "enabled": true,
     "tracksData": [
       {
         "name": "主唱",
@@ -816,6 +835,7 @@
     "bpm": 66,
     "song_key": "Db",
     "lyrics": "歌词.txt",
+    "enabled": true,
     "tracksData": [
       {
         "name": "主唱",
@@ -857,6 +877,7 @@
     "bpm": 88,
     "song_key": "E",
     "lyrics": "歌词.txt",
+    "enabled": true,
     "tracksData": [
       {
         "name": "主唱",
