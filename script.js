@@ -757,46 +757,54 @@ document.addEventListener('DOMContentLoaded', () => {
         updateSingleMeter(state.masterAnalyserNode, state.masterTimeDomainData, masterMeterBar);
     }
 
-    function updateSingleMeter(analyserNode, timeDomainData, meterBar, track = null) {
-        const meterWrapper = meterBar.parentElement;
-        const isMetronomeMeter = meterWrapper.classList.contains('metronome-meter');
-        const rootStyles = getComputedStyle(document.documentElement);
+  function updateSingleMeter(analyserNode, timeDomainData, meterBar, track = null) {
+    const meterWrapper = meterBar.parentElement;
+    const isMetronomeMeter = meterWrapper.classList.contains('metronome-meter');
+    const rootStyles = getComputedStyle(document.documentElement);
 
-        if (isMetronomeMeter && track && track.isMuted) {
-            meterWrapper.style.backgroundColor = rootStyles.getPropertyValue('--color-border').trim();
-            return;
-        }
-
-        const MIN_DB = -60.0;
-        analyserNode.getFloatTimeDomainData(timeDomainData);
-        let peakAmplitude = 0.0;
-        for (const sample of timeDomainData) {
-            const absSample = Math.abs(sample);
-            if (absSample > peakAmplitude) peakAmplitude = absSample;
-        }
-
-        if (peakAmplitude === 0) {
-            if (isMetronomeMeter) {
-                meterWrapper.style.backgroundColor = rootStyles.getPropertyValue('--color-border').trim();
-            } else {
-                meterBar.style.height = '0%';
-            }
-            return;
-        }
-
-        const peakDb = 20 * Math.log10(peakAmplitude);
-        const levelPercent = peakDb < MIN_DB ? 0 : Math.min(100, Math.max(0, ((((peakDb - MIN_DB) / -MIN_DB) ** 2) * 100) | 0));
-
-        if (isMetronomeMeter) {
-            const fillColor = rootStyles.getPropertyValue('--color-success').trim();
-            const bgColor = rootStyles.getPropertyValue('--color-border').trim();
-            meterWrapper.style.backgroundColor = levelPercent > 85 ? fillColor : bgColor;
-            meterBar.style.height = '0%';
-        } else {
-            meterBar.style.height = `${levelPercent}%`;
-            // The color is now set by CSS variable in styles.css, no need to set it here.
-        }
+    const MIN_DB = -60.0;
+    analyserNode.getFloatTimeDomainData(timeDomainData);
+    let peakAmplitude = 0.0;
+    for (const sample of timeDomainData) {
+        const absSample = Math.abs(sample);
+        if (absSample > peakAmplitude) peakAmplitude = absSample;
     }
+
+    if (peakAmplitude === 0) {
+        if (isMetronomeMeter) {
+            meterWrapper.style.backgroundColor = rootStyles.getPropertyValue('--color-border').trim();
+        } else {
+            meterBar.style.height = '0%';
+        }
+        return;
+    }
+
+    const peakDb = 20 * Math.log10(peakAmplitude);
+    const levelPercent = peakDb < MIN_DB ? 0 : Math.min(100, Math.max(0, ((((peakDb - MIN_DB) / -MIN_DB) ** 2) * 100) | 0));
+
+    if (isMetronomeMeter) {
+        const isMuted = track.isMuted;
+        const baseColor = rootStyles.getPropertyValue('--color-border').trim();
+        let finalColor = baseColor;
+
+        // 当检测到节拍信号时
+        if (levelPercent > 85) {
+            if (isMuted) {
+                // 如果是静音状态，使用紫色
+                finalColor = rootStyles.getPropertyValue('--color-accent-mute').trim();
+            } else {
+                // 如果是激活状态，使用绿色
+                finalColor = rootStyles.getPropertyValue('--color-success').trim();
+            }
+        }
+        
+        meterWrapper.style.backgroundColor = finalColor;
+        meterBar.style.height = '0%'; // 节拍器指示器本身没有高度
+    } else {
+        meterBar.style.height = `${levelPercent}%`;
+        // The color is now set by CSS variable in styles.css, no need to set it here.
+    }
+}
 
     // --- UI Update Functions ---
 
