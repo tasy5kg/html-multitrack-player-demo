@@ -4,6 +4,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const RESOURCE_BASE_URL = '';
 
+    const AUDIO_RESOURCE_SERVERS = [
+        'https://mixmusic-1302021366.cos.ap-chengdu.myqcloud.com',
+        ''
+    ];
+
     // --- DOM Elements ---
     const songSelect = document.getElementById('song-select');
     const mainPlayerControls = document.getElementById('main-player-controls');
@@ -83,6 +88,34 @@ document.addEventListener('DOMContentLoaded', () => {
         masterProgress.addEventListener('touchend', () => state.isSeeking = false);
 
         document.addEventListener('keydown', handleKeyPress);
+    }
+
+    async function fetchWithFallback(relativePath, options, sessionId) {
+        let lastError = null;
+
+        for (const server of AUDIO_RESOURCE_SERVERS) {
+            // 在每次尝试前检查加载会话是否已被中止
+            if (sessionId !== state.loadingSessionId) throw new Error("Session aborted");
+
+            // 构建完整的资源 URL
+            const url = server ? `${server}/${relativePath}` : relativePath;
+
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) {
+                    throw new Error(`请求失败，状态码: ${response.status}`);
+                }
+                // 加载成功，返回响应对象
+                return response;
+            } catch (error) {
+                console.warn(`从服务器 [${server || '当前网站'}] 加载 ${relativePath} 失败，尝试下一个...`, error.message);
+                lastError = error;
+            }
+        }
+
+        // 如果所有服务器都尝试失败，则抛出最后的错误
+        console.error(`所有备用服务器均无法加载资源: ${relativePath}`);
+        throw lastError;
     }
 
     // --- Event Handlers ---
@@ -278,7 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loadingText.innerHTML = '正在计算音频总大小...';
 
         const promises = state.tracks.map(track =>
-            fetch(track.file, { method: 'HEAD' })
+            fetchWithFallback(track.file, { method: 'HEAD' }, sessionId)
         );
         const results = await Promise.allSettled(promises);
 
@@ -289,11 +322,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (result.status === 'fulfilled' && result.value.ok) {
                 const size = result.value.headers.get('content-length');
                 if (size) totalBytes += parseInt(size, 10);
+            } else {
+                console.warn("计算某个轨道的大小时失败:", result.reason?.message || result.reason);
             }
         }
 
         if (totalBytes === 0) {
-            console.warn("Could not determine total size. Progress bar may not be accurate.");
+            console.warn("无法确定总大小，加载进度条可能不准确。");
         }
 
         state.totalDownloadSize = totalBytes;
@@ -313,8 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchTrackWithProgress(track, sessionId) {
         if (sessionId !== state.loadingSessionId) throw new Error("Session aborted");
 
-        const response = await fetch(track.file);
-        if (!response.ok) throw new Error(`Failed to fetch ${track.file}`);
+        const response = await fetchWithFallback(track.file, {}, sessionId);
 
         const reader = response.body.getReader();
         const chunks = [];
