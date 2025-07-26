@@ -4,6 +4,8 @@
 
 源码：https://github.com/tasy5kg/html-multitrack-player-demo/
 
+微信公众号：光光可爱小仙女
+
 ---
 
 备注：
