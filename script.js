@@ -191,11 +191,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (sessionId !== state.loadingSessionId) return;
                     const text = await response.text();
                     if (sessionId !== state.loadingSessionId) return;
-                        lyricsContent.textContent = text;
+                    lyricsContent.textContent = text;
                 } catch (error) {
                     if (sessionId !== state.loadingSessionId) return;
                     console.error('加载歌词失败:', error);
-                        lyricsContent.textContent = '歌词加载失败';
+                    lyricsContent.textContent = '歌词加载失败';
                 }
 
                 closeBtn.onclick = function () {
@@ -373,6 +373,11 @@ document.addEventListener('DOMContentLoaded', () => {
         state.masterGainNode.connect(state.masterAnalyserNode);
         state.masterAnalyserNode.connect(state.audioContext.destination);
 
+        // 从 DOM 中动态获取 Tailwind 颜色
+        const waveColor = getComputedStyle(document.getElementById('wave-color')).color;
+        const progressColor = getComputedStyle(document.getElementById('progress-color')).color;
+        const cursorColor = getComputedStyle(document.getElementById('cursor-color')).color;
+
         const loadPromises = state.tracks.map(async (track) => {
             if (sessionId !== state.loadingSessionId) throw new Error("Session aborted");
 
@@ -425,11 +430,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (sessionId !== state.loadingSessionId) return reject(new Error("Session aborted"));
                     track.wavesurfer = WaveSurfer.create({
                         container: track.ui.waveformContainer,
-                        waveColor: '#10b981',
-                        progressColor: '#047857',
+                        waveColor: waveColor,
+                        progressColor: progressColor,
                         height: 60,
                         cursorWidth: 1,
-                        cursorColor: '#f43f5e',
+                        cursorColor: cursorColor,
                         media: audioElement,
                         interact: true,
                     });
@@ -741,7 +746,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const track = state.tracks[i];
             if (track.audioElement) {
                 const timeDiff = Math.abs(track.audioElement.currentTime - currentTime);
-                // Only correct if the drift is larger than a small threshold (e.g., 100ms).
+                // Only correct if the drift is larger than a small threshold (e.g., 100 ms).
                 // This prevents excessive seeking which can cause minor audio glitches.
                 if (timeDiff > 0.1) {
                     track.audioElement.currentTime = currentTime;
@@ -792,7 +797,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (peakAmplitude === 0) {
             if (isMetronomeMeter) {
-                meterWrapper.style.backgroundColor = rootStyles.getPropertyValue('--color-border').trim();
+                meterWrapper.style.backgroundColor = rootStyles.getPropertyValue('--progress-track-bg').trim();
             } else {
                 meterBar.style.height = '0%';
             }
@@ -804,9 +809,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (isMetronomeMeter) {
             const isMuted = track.isMuted;
-            let finalColor = rootStyles.getPropertyValue('--color-border').trim();
+            let finalColor = rootStyles.getPropertyValue('--progress-track-bg').trim();
             if (levelPercent > 85) {
-                finalColor = isMuted ? rootStyles.getPropertyValue('--color-accent-mute').trim() : rootStyles.getPropertyValue('--color-success').trim();
+                finalColor = isMuted ? rootStyles.getPropertyValue('--mute-button-bg').trim() : rootStyles.getPropertyValue('--volume-track-fill-bg').trim();
             }
             meterWrapper.style.backgroundColor = finalColor;
             meterBar.style.height = '0%'; // 节拍器指示器本身没有高度
