@@ -44,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
         totalDownloadSize: 0,
         downloadedBytes: 0,
         loadingSessionId: 0,
+        colors: {},
     };
 
     // --- Initialization ---
@@ -53,6 +54,21 @@ document.addEventListener('DOMContentLoaded', () => {
         mixerTracksContainer.innerHTML = '';
         loadSongsList();
         bindGlobalEvents();
+        cacheColors();
+    }
+
+    function cacheColors() {
+        const colorContainer = document.getElementById('wavesurfer-colors');
+        if (!colorContainer) return;
+        state.colors.cursorColor = getComputedStyle(colorContainer.querySelector('#cursor-color')).color;
+        state.colors.waveColor = getComputedStyle(colorContainer.querySelector('#wave-color')).color;
+        state.colors.waveColorInactive = getComputedStyle(colorContainer.querySelector('#wave-color-inactive')).color;
+        state.colors.progressColor = getComputedStyle(colorContainer.querySelector('#progress-color')).color;
+        state.colors.progressColorInactive = getComputedStyle(colorContainer.querySelector('#progress-color-inactive')).color;
+        state.colors.meterColor = getComputedStyle(colorContainer.querySelector('#meter-color')).color;
+        state.colors.meterColorInactive = getComputedStyle(colorContainer.querySelector('#meter-color-inactive')).color;
+        state.colors.meterColorMetronome = getComputedStyle(colorContainer.querySelector('#meter-color-metronome')).color;
+        state.colors.meterColorInactiveMetronome = getComputedStyle(colorContainer.querySelector('#meter-color-inactive-metronome')).color;
     }
 
     function loadSongsList() {
@@ -80,7 +96,9 @@ document.addEventListener('DOMContentLoaded', () => {
         masterProgress.addEventListener('change', handleMasterProgressChange);
         masterProgress.addEventListener('mousedown', () => state.isSeeking = true);
         masterProgress.addEventListener('mouseup', () => state.isSeeking = false);
-        masterProgress.addEventListener('touchstart', () => state.isSeeking = true, {passive: true});
+        masterProgress.addEventListener('touchstart', () => state.isSeeking = true, {
+            passive: true
+        });
         masterProgress.addEventListener('touchend', () => state.isSeeking = false);
 
         document.addEventListener('keydown', handleKeyPress);
@@ -165,7 +183,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             songInfoDiv.classList.remove('hidden');
 
-            // 绑定查看歌词事件
             setTimeout(() => {
                 const viewLyricsLink = document.getElementById('view-lyrics-link');
                 if (viewLyricsLink) {
@@ -176,7 +193,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }, 0);
 
-            // 歌词弹窗相关逻辑
             async function showLyricsModal(song, sessionId) {
                 const modal = document.getElementById('lyrics-modal');
                 const lyricsContent = document.getElementById('lyrics-content');
@@ -184,7 +200,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 lyricsContent.textContent = '加载中...';
                 modal.classList.remove('hidden');
 
-                // 歌词文件路径
                 const lyricsPath = `${song.folder}/${song.lyrics}`;
                 try {
                     const response = await fetchWithFallback(lyricsPath, {}, sessionId);
@@ -201,7 +216,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 closeBtn.onclick = function () {
                     modal.classList.add('hidden');
                 };
-                // 点击遮罩关闭
                 modal.onclick = function (e) {
                     if (e.target === modal) {
                         modal.classList.add('hidden');
@@ -298,7 +312,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sessionId !== state.loadingSessionId) throw new Error("Session aborted");
         loadingText.innerHTML = '正在计算音频总大小...';
 
-        const promises = state.tracks.map(track => fetchWithFallback(track.file, {method: 'HEAD'}, sessionId));
+        const promises = state.tracks.map(track => fetchWithFallback(track.file, {
+            method: 'HEAD'
+        }, sessionId));
         const results = await Promise.allSettled(promises);
 
         if (sessionId !== state.loadingSessionId) throw new Error("Session aborted");
@@ -344,7 +360,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 reader.cancel();
                 throw new Error("Session aborted");
             }
-            const {done, value} = await reader.read();
+            const {
+                done, value
+            } = await reader.read();
             if (done) break;
 
             chunks.push(value);
@@ -373,11 +391,6 @@ document.addEventListener('DOMContentLoaded', () => {
         state.masterGainNode.connect(state.masterAnalyserNode);
         state.masterAnalyserNode.connect(state.audioContext.destination);
 
-        // 从 DOM 中动态获取 Tailwind 颜色
-        const waveColor = getComputedStyle(document.getElementById('wave-color')).color;
-        const progressColor = getComputedStyle(document.getElementById('progress-color')).color;
-        const cursorColor = getComputedStyle(document.getElementById('cursor-color')).color;
-
         const loadPromises = state.tracks.map(async (track) => {
             if (sessionId !== state.loadingSessionId) throw new Error("Session aborted");
 
@@ -394,23 +407,29 @@ document.addEventListener('DOMContentLoaded', () => {
             track.audioElement = audioElement;
 
             const sourceNode = state.audioContext.createMediaElementSource(audioElement);
-            const gainNode = state.audioContext.createGain();
-            gainNode.gain.value = track.isMuted ? 0 : track.lastVolume;
             const analyserNode = state.audioContext.createAnalyser();
             analyserNode.fftSize = 2048;
-
-            sourceNode.connect(gainNode);
-            if (track.name === '节拍器') {
-                gainNode.connect(state.masterGainNode);
-                sourceNode.connect(analyserNode);
-            } else {
-                gainNode.connect(analyserNode);
-                analyserNode.connect(state.masterGainNode);
-            }
-
-            track.gainNode = gainNode;
             track.analyserNode = analyserNode;
             track.timeDomainData = new Float32Array(analyserNode.fftSize);
+
+            if (track.name === '节拍器') {
+                const gainNode = state.audioContext.createGain();
+                sourceNode.connect(analyserNode);
+                sourceNode.connect(gainNode);
+                gainNode.connect(state.masterGainNode);
+                track.gainNode = gainNode;
+            } else {
+                const volumeGainNode = state.audioContext.createGain();
+                const muteGainNode = state.audioContext.createGain();
+
+                sourceNode.connect(volumeGainNode);
+                volumeGainNode.connect(analyserNode);
+                volumeGainNode.connect(muteGainNode);
+                muteGainNode.connect(state.masterGainNode);
+
+                track.volumeGainNode = volumeGainNode;
+                track.muteGainNode = muteGainNode;
+            }
 
             const metadataPromise = new Promise((resolve, reject) => {
                 audioElement.addEventListener('loadedmetadata', () => {
@@ -430,11 +449,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (sessionId !== state.loadingSessionId) return reject(new Error("Session aborted"));
                     track.wavesurfer = WaveSurfer.create({
                         container: track.ui.waveformContainer,
-                        waveColor: waveColor,
-                        progressColor: progressColor,
+                        waveColor: state.colors.waveColor,
+                        progressColor: state.colors.progressColor,
                         height: 60,
                         cursorWidth: 1,
-                        cursorColor: cursorColor,
+                        cursorColor: state.colors.cursorColor,
                         media: audioElement,
                         interact: true,
                     });
@@ -514,7 +533,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         tracksData.forEach((trackData) => {
             const isMetronome = trackData.name === '节拍器';
-            const {trackElement, uiComponents} = buildSingleTrackUI(trackData, isMetronome);
+            const {
+                trackElement, uiComponents
+            } = buildSingleTrackUI(trackData, isMetronome);
             mixerTracksContainer.appendChild(trackElement);
 
             const track = {
@@ -522,6 +543,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 lastVolume: trackData.defaultVolume / 100,
                 isMuted: isMetronome,
                 isSoloed: false,
+                isEffectivelyPlaying: !isMetronome,
                 ui: uiComponents,
             };
 
@@ -546,45 +568,67 @@ document.addEventListener('DOMContentLoaded', () => {
         label.textContent = trackData.name;
         label.className = 'text-sm font-bold text-slate-700 w-28 truncate';
 
-        const {sliderWrapper, volumeSlider, volumeTooltip} = createVolumeSlider(trackData);
+        const {
+            sliderWrapper, volumeSlider, volumeTooltip
+        } = createVolumeSlider(trackData);
 
-        let controlElements, uiComponents = {volumeSlider, tooltip: volumeTooltip};
+        let controlElements, uiComponents = {
+            volumeSlider, tooltip: volumeTooltip
+        };
 
         if (isMetronome) {
-            const {toggleSwitch, toggleInput} = createToggleSwitch();
-            const {meterWrapper, meterBar} = createLevelMeter(true);
+            const {
+                toggleSwitch, toggleInput
+            } = createToggleSwitch();
+            const {
+                meterWrapper, meterBar
+            } = createLevelMeter(true);
             controlElements = document.createElement('div');
             controlElements.className = 'flex items-center space-x-2 w-[96px] justify-end';
             controlElements.append(toggleSwitch, meterWrapper);
-            Object.assign(uiComponents, {toggleInput, meterBar});
+            Object.assign(uiComponents, {
+                toggleInput, meterBar
+            });
             topRow.append(label, sliderWrapper, controlElements);
             trackElement.append(topRow);
         } else {
-            const {soloMuteContainer, muteBtn, soloBtn} = createControlButtons();
+            const {
+                soloMuteContainer, muteBtn, soloBtn
+            } = createControlButtons();
             controlElements = soloMuteContainer;
-            Object.assign(uiComponents, {muteBtn, soloBtn});
+            Object.assign(uiComponents, {
+                muteBtn, soloBtn
+            });
 
             const bottomRow = document.createElement('div');
             bottomRow.className = 'flex items-center space-x-2';
             const waveformContainer = document.createElement('div');
             waveformContainer.className = 'waveform-container flex-grow';
-            const {meterWrapper, meterBar} = createLevelMeter(false);
+            const {
+                meterWrapper, meterBar
+            } = createLevelMeter(false);
 
-            Object.assign(uiComponents, {waveformContainer, meterBar});
+            Object.assign(uiComponents, {
+                waveformContainer, meterBar
+            });
 
             bottomRow.append(waveformContainer, meterWrapper);
             topRow.append(label, sliderWrapper, controlElements);
             trackElement.append(topRow, bottomRow);
         }
 
-        return {trackElement, uiComponents};
+        return {
+            trackElement, uiComponents
+        };
     }
 
     function createVolumeSlider(trackData) {
         const sliderWrapper = document.createElement('div');
         sliderWrapper.className = 'volume-slider-wrapper relative flex-grow h-[20px] flex items-center';
         const volumeSlider = document.createElement('input');
-        Object.assign(volumeSlider, {type: 'range', min: 0, max: 100, value: trackData.defaultVolume});
+        Object.assign(volumeSlider, {
+            type: 'range', min: 0, max: 100, value: trackData.defaultVolume
+        });
         volumeSlider.className = 'volume-slider w-full';
 
         const volumeTooltip = document.createElement('div');
@@ -592,7 +636,9 @@ document.addEventListener('DOMContentLoaded', () => {
         volumeTooltip.textContent = `${trackData.defaultVolume}%`;
 
         sliderWrapper.append(volumeSlider, volumeTooltip);
-        return {sliderWrapper, volumeSlider, volumeTooltip};
+        return {
+            sliderWrapper, volumeSlider, volumeTooltip
+        };
     }
 
     function createControlButtons() {
@@ -605,7 +651,9 @@ document.addEventListener('DOMContentLoaded', () => {
         soloBtn.textContent = '独奏';
         soloBtn.className = 'control-button solo-button';
         soloMuteContainer.append(muteBtn, soloBtn);
-        return {soloMuteContainer, muteBtn, soloBtn};
+        return {
+            soloMuteContainer, muteBtn, soloBtn
+        };
     }
 
     function createToggleSwitch() {
@@ -617,7 +665,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const slider = document.createElement('span');
         slider.className = 'toggle-switch-slider';
         toggleSwitch.append(toggleInput, slider);
-        return {toggleSwitch, toggleInput};
+        return {
+            toggleSwitch, toggleInput
+        };
     }
 
     function createLevelMeter(isMetronome = false) {
@@ -626,16 +676,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const meterBar = document.createElement('div');
         meterBar.className = 'vertical-meter-bar';
         meterWrapper.appendChild(meterBar);
-        return {meterWrapper, meterBar};
+        return {
+            meterWrapper, meterBar
+        };
     }
 
     // --- Event Binding ---
 
     function bindTrackEvents(track, isMetronome) {
-        const {volumeSlider} = track.ui;
+        const {
+            volumeSlider
+        } = track.ui;
         volumeSlider.addEventListener('input', e => handleVolumeChange(e, track));
         volumeSlider.addEventListener('mousedown', () => showTooltip(track.ui));
-        volumeSlider.addEventListener('touchstart', () => showTooltip(track.ui), {passive: true});
+        volumeSlider.addEventListener('touchstart', () => showTooltip(track.ui), {
+            passive: true
+        });
 
         if (isMetronome) {
             track.ui.toggleInput.addEventListener('change', () => handleMetronomeToggle(track));
@@ -709,23 +765,32 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!state.audioContext) return;
 
         state.tracks.forEach(track => {
-            let finalVolume;
+            const isAudible = track.name === '节拍器'
+                ? !track.isMuted
+                : state.isAnyTrackSoloed
+                    ? (track.isSoloed && !track.isMuted)
+                    : !track.isMuted;
+
             if (track.name === '节拍器') {
-                finalVolume = track.isMuted ? 0 : track.lastVolume;
+                if (track.gainNode) {
+                    const finalVolume = isAudible ? track.lastVolume : 0;
+                    track.gainNode.gain.setTargetAtTime(finalVolume, state.audioContext.currentTime, 0.01);
+                }
             } else {
-                finalVolume = 0;
-                if (state.isAnyTrackSoloed) {
-                    if (track.isSoloed && !track.isMuted) {
-                        finalVolume = track.lastVolume;
-                    }
-                } else {
-                    if (!track.isMuted) {
-                        finalVolume = track.lastVolume;
-                    }
+                if (track.volumeGainNode && track.muteGainNode) {
+                    track.volumeGainNode.gain.setTargetAtTime(track.lastVolume, state.audioContext.currentTime, 0.01);
+                    track.muteGainNode.gain.setTargetAtTime(isAudible ? 1 : 0, state.audioContext.currentTime, 0.01);
                 }
             }
-            if (track.gainNode) {
-                track.gainNode.gain.setTargetAtTime(finalVolume, state.audioContext.currentTime, 0.01);
+
+            if (track.isEffectivelyPlaying !== isAudible) {
+                track.isEffectivelyPlaying = isAudible;
+                if (track.wavesurfer) {
+                    track.wavesurfer.setOptions({
+                        waveColor: isAudible ? state.colors.waveColor : state.colors.waveColorInactive,
+                        progressColor: isAudible ? state.colors.progressColor : state.colors.progressColorInactive,
+                    });
+                }
             }
         });
     }
@@ -808,16 +873,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const levelPercent = peakDb < MIN_DB ? 0 : Math.min(100, Math.max(0, ((((peakDb - MIN_DB) / -MIN_DB) ** 2) * 100) | 0));
 
         if (isMetronomeMeter) {
-            const isMuted = track.isMuted;
+            const isMuted = !track.ui.toggleInput.checked;
             let finalColor = rootStyles.getPropertyValue('--progress-track-bg').trim();
             if (levelPercent > 85) {
-                finalColor = isMuted ? rootStyles.getPropertyValue('--mute-button-bg').trim() : rootStyles.getPropertyValue('--volume-track-fill-bg').trim();
+                finalColor = isMuted ? state.colors.meterColorInactiveMetronome : state.colors.meterColorMetronome;
             }
             meterWrapper.style.backgroundColor = finalColor;
-            meterBar.style.height = '0%'; // 节拍器指示器本身没有高度
+            meterBar.style.height = '0%';
         } else {
+            const isActive = track ? track.isEffectivelyPlaying : true;
+            meterBar.style.backgroundColor = isActive ? state.colors.meterColor : state.colors.meterColorInactive;
             meterBar.style.height = `${levelPercent}%`;
-            // The color is now set by CSS variable in styles.css, no need to set it here.
         }
     }
 
@@ -838,7 +904,6 @@ document.addEventListener('DOMContentLoaded', () => {
         playIcon.classList.toggle('hidden', state.isPlaying);
         pauseIcon.classList.toggle('hidden', !state.isPlaying);
 
-        // Simplified class toggling, colors are managed by Tailwind classes in HTML
         if (state.isPlaying) {
             playPauseBtn.classList.replace('bg-blue-500', 'bg-amber-500');
             playPauseBtn.classList.replace('hover:bg-blue-600', 'hover:bg-amber-600');
