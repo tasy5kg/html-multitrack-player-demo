@@ -171,13 +171,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (viewLyricsLink) {
                     viewLyricsLink.onclick = function (e) {
                         e.preventDefault();
-                        showLyricsModal(state.currentSong);
+                        showLyricsModal(state.currentSong, currentSessionId);
                     };
                 }
             }, 0);
 
             // 歌词弹窗相关逻辑
-            function showLyricsModal(song) {
+            async function showLyricsModal(song, sessionId) {
                 const modal = document.getElementById('lyrics-modal');
                 const lyricsContent = document.getElementById('lyrics-content');
                 const closeBtn = document.getElementById('close-lyrics-modal');
@@ -185,18 +185,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 modal.classList.remove('hidden');
 
                 // 歌词文件路径
-                const lyricsPath = `${RESOURCE_BASE_URL}/${song.folder}/${song.lyrics}`;
-                fetch(lyricsPath)
-                    .then(res => {
-                        if (!res.ok) throw new Error('歌词加载失败');
-                        return res.text();
-                    })
-                    .then(text => {
+                const lyricsPath = `${song.folder}/${song.lyrics}`;
+                try {
+                    const response = await fetchWithFallback(lyricsPath, {}, sessionId);
+                    if (sessionId !== state.loadingSessionId) return;
+                    const text = await response.text();
+                    if (sessionId !== state.loadingSessionId) return;
                         lyricsContent.textContent = text;
-                    })
-                    .catch(() => {
+                } catch (error) {
+                    if (sessionId !== state.loadingSessionId) return;
+                    console.error('加载歌词失败:', error);
                         lyricsContent.textContent = '歌词加载失败';
-                    });
+                }
 
                 closeBtn.onclick = function () {
                     modal.classList.add('hidden');
