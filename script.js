@@ -2,9 +2,6 @@ import songsListData from './songs.json';
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    const RESOURCE_BASE_URL = '';
-    const AUDIO_RESOURCE_SERVERS = ['https://mixmusic-1302021366.cos.ap-chengdu.myqcloud.com', ''];
-
     // --- DOM Elements ---
     const songSelect = document.getElementById('song-select');
     const mainPlayerControls = document.getElementById('main-player-controls');
@@ -104,25 +101,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('keydown', handleKeyPress);
     }
 
-    async function fetchWithFallback(relativePath, options, sessionId) {
-        let lastError = null;
-
-        for (const server of AUDIO_RESOURCE_SERVERS) {
-            if (sessionId !== state.loadingSessionId) throw new Error("Session aborted");
-            const url = server ? `${server}/${relativePath}` : relativePath;
-            try {
-                const response = await fetch(url, options);
-                if (!response.ok) {
-                    throw new Error(`请求失败，状态码: ${response.status}`);
-                }
-                return response;
-            } catch (error) {
-                console.warn(`从服务器 [${server || '当前网站'}] 加载 ${relativePath} 失败，尝试下一个...`, error.message);
-                lastError = error;
-            }
+    async function fetchAudioResource(relativePath, options, sessionId) {
+        if (sessionId !== state.loadingSessionId) throw new Error("Session aborted");
+        const response = await fetch(relativePath, options);
+        if (!response.ok) {
+            throw new Error(`请求失败，状态码: ${response.status}`);
         }
-        console.error(`所有备用服务器均无法加载资源: ${relativePath}`);
-        throw lastError;
+        return response;
     }
 
     // --- Event Handlers ---
@@ -184,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const lyricsPath = `${song.folder}/${song.lyrics}`;
                 try {
-                    const response = await fetchWithFallback(lyricsPath, {}, sessionId);
+                    const response = await fetchAudioResource(lyricsPath, {}, sessionId);
                     if (sessionId !== state.loadingSessionId) return;
                     const text = await response.text();
                     if (sessionId !== state.loadingSessionId) return;
@@ -265,7 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const tracksData = state.currentSong.tracksData.map(track => ({
             name: track.name,
-            file: `${RESOURCE_BASE_URL}/${state.currentSong.folder}/${track.file}`,
+            file: `${state.currentSong.folder}/${track.file}`,
             defaultVolume: track.name === '节拍器' ? 50 : 75,
         }));
 
@@ -294,7 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sessionId !== state.loadingSessionId) throw new Error("Session aborted");
         loadingText.innerHTML = '正在计算音频总大小...';
 
-        const promises = state.tracks.map(track => fetchWithFallback(track.file, {
+        const promises = state.tracks.map(track => fetchAudioResource(track.file, {
             method: 'HEAD'
         }, sessionId));
         const results = await Promise.allSettled(promises);
@@ -332,7 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchTrackWithProgress(track, sessionId) {
         if (sessionId !== state.loadingSessionId) throw new Error("Session aborted");
 
-        const response = await fetchWithFallback(track.file, {}, sessionId);
+        const response = await fetchAudioResource(track.file, {}, sessionId);
 
         const reader = response.body.getReader();
         const chunks = [];
