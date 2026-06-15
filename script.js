@@ -152,24 +152,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedIndex = songSelect.value;
         if (state.songsList[selectedIndex]) {
             state.currentSong = state.songsList[selectedIndex];
-            fetch('./log.php', {
-                method: 'POST', headers: {
-                    'Content-Type': 'application/json',
-                }, body: JSON.stringify({
-                    songId: state.currentSong.folder
-                })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status !== 'success') {
-                        console.error('统计记录失败:', data.message);
-                    } else {
-                        console.log('统计记录成功。');
-                    }
-                })
-                .catch(error => {
-                    console.error('发送统计数据时出错:', error);
-                });
             songSelect.blur();
             const songInfoDiv = document.getElementById('song-info');
             if (state.currentSong.bpm && state.currentSong.song_key) {
